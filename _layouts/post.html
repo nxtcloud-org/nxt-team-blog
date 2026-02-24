@@ -1,0 +1,118 @@
+---
+layout: default
+---
+<article class="post-page">
+  <div class="post-hero">
+    <div class="container">
+      <div class="post-hero-inner">
+        <div class="post-breadcrumb">
+          <a href="{{ '/' | relative_url }}">Home</a>
+          <span>/</span>
+          <span>Posts</span>
+        </div>
+
+        <div class="post-tags-top">
+          {% for tag in page.tags %}
+          <a href="{{ '/tags/' | append: tag | relative_url }}" class="post-tag">{{ tag }}</a>
+          {% endfor %}
+        </div>
+
+        <h1 class="post-title">{{ page.title }}</h1>
+
+        {% if page.description %}
+        <p class="post-description">{{ page.description }}</p>
+        {% endif %}
+
+        <div class="post-meta-bar">
+          {% assign author = site.authors | where: "short_name", page.author | first %}
+          {% if author %}
+          <a href="{{ author.url | relative_url }}" class="author-info">
+            <div class="author-avatar-sm" style="background: {{ author.color | default: '#6366f1' }}">{{ author.name | slice: 0 }}</div>
+            <div>
+              <span class="author-name">{{ author.name }}</span>
+              <span class="author-role-sm">{{ author.role }}</span>
+            </div>
+          </a>
+          {% endif %}
+          <div class="post-meta-details">
+            <span class="post-date">{{ page.date | date: "%Y년 %m월 %d일" }}</span>
+            <span class="dot">·</span>
+            <span class="read-time">{{ page.content | number_of_words | divided_by: 200 | plus: 1 }}분 읽기</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="container post-container">
+    <div class="post-layout">
+      <div class="post-body">
+        <div class="post-content">
+          {{ content }}
+        </div>
+
+        <div class="post-footer">
+          <div class="post-tags-bottom">
+            <strong>태그:</strong>
+            {% for tag in page.tags %}
+            <a href="{{ '/tags/' | append: tag | relative_url }}" class="post-tag">{{ tag }}</a>
+            {% endfor %}
+          </div>
+
+          {% if author %}
+          <div class="author-card">
+            <div class="author-avatar-lg" style="background: {{ author.color | default: '#6366f1' }}">{{ author.name | slice: 0 }}</div>
+            <div class="author-card-info">
+              <h3>{{ author.name }}</h3>
+              <p class="author-role">{{ author.role }}</p>
+              <p>{{ author.bio }}</p>
+              <div class="author-links">
+                {% if author.github %}<a href="https://github.com/{{ author.github }}" target="_blank" rel="noopener">GitHub</a>{% endif %}
+                {% if author.twitter %}<a href="https://twitter.com/{{ author.twitter }}" target="_blank" rel="noopener">Twitter</a>{% endif %}
+                {% if author.linkedin %}<a href="{{ author.linkedin }}" target="_blank" rel="noopener">LinkedIn</a>{% endif %}
+              </div>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+
+        <nav class="post-nav">
+          {% if page.previous.url %}
+          <a href="{{ page.previous.url | relative_url }}" class="post-nav-link prev">
+            <span class="nav-label">← 이전 글</span>
+            <span class="nav-title">{{ page.previous.title }}</span>
+          </a>
+          {% else %}
+          <div></div>
+          {% endif %}
+          {% if page.next.url %}
+          <a href="{{ page.next.url | relative_url }}" class="post-nav-link next">
+            <span class="nav-label">다음 글 →</span>
+            <span class="nav-title">{{ page.next.title }}</span>
+          </a>
+          {% endif %}
+        </nav>
+      </div>
+
+      <aside class="post-sidebar">
+        <div class="toc-card sticky-card">
+          <h4 class="toc-title">목차</h4>
+          <div class="toc-content" id="toc"></div>
+        </div>
+
+        {% assign related = site.posts | where_exp: "post", "post.url != page.url" | where_exp: "post", "post.tags contains page.tags[0]" | limit: 3 %}
+        {% if related.size > 0 %}
+        <div class="related-card sticky-card">
+          <h4>관련 글</h4>
+          {% for post in related %}
+          <a href="{{ post.url | relative_url }}" class="related-post">
+            <span class="related-title">{{ post.title }}</span>
+            <span class="related-date">{{ post.date | date: "%m.%d" }}</span>
+          </a>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </aside>
+    </div>
+  </div>
+</article>

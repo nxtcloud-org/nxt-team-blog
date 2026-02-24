@@ -1,0 +1,60 @@
+title: NXT Team Blog
+description: NXT 팀의 기술 블로그 - 우리의 경험과 인사이트를 공유합니다.
+url: "https://nxtcloud-org.github.io"
+baseurl: "/nxt-team-blog"
+
+author: NXT Team
+email: team@nxtcloud.io
+lang: ko
+
+# Build settings
+markdown: kramdown
+highlighter: rouge
+permalink: /posts/:year/:month/:day/:title/
+
+# Plugins
+plugins:
+  - jekyll-feed
+  - jekyll-sitemap
+  - jekyll-seo-tag
+  - jekyll-paginate
+
+# Pagination
+paginate: 6
+paginate_path: "/page/:num/"
+
+# Collections
+collections:
+  authors:
+    output: true
+    permalink: /team/:name/
+
+# Defaults
+defaults:
+  - scope:
+      path: ""
+      type: "posts"
+    values:
+      layout: "post"
+      comments: true
+  - scope:
+      path: ""
+      type: "authors"
+    values:
+      layout: "author"
+
+# Exclude from build
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor
+  - .bundle
+  - README.md
+
+# Social
+github_username: nxtcloud-org
+twitter_username: nxtcloud
+
+# Theme color
+accent_color: "#6366f1"

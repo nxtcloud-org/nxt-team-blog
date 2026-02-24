@@ -1,0 +1,22 @@
+{% assign p = include.post %}
+<article class="post-card">
+  <a href="{{ p.url | relative_url }}" class="post-card-link">
+    <div class="post-card-tags">
+      {% for tag in p.tags limit: 2 %}
+      <span class="post-tag">{{ tag }}</span>
+      {% endfor %}
+    </div>
+    <h2 class="post-card-title">{{ p.title }}</h2>
+    <p class="post-card-excerpt">{{ p.excerpt | strip_html | truncate: 120 }}</p>
+    <div class="post-card-footer">
+      {% assign author = site.authors | where: "short_name", p.author | first %}
+      {% if author %}
+      <div class="author-info-sm">
+        <div class="author-avatar-xs" style="background: {{ author.color | default: '#6366f1' }}">{{ author.name | slice: 0 }}</div>
+        <span>{{ author.name }}</span>
+      </div>
+      {% endif %}
+      <span class="post-date">{{ p.date | date: "%Y.%m.%d" }}</span>
+    </div>
+  </a>
+</article>

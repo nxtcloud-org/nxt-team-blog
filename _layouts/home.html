@@ -1,0 +1,140 @@
+---
+layout: default
+---
+<section class="hero">
+  <div class="container">
+    <div class="hero-content">
+      <div class="hero-badge">✦ NXT Team Blog</div>
+      <h1 class="hero-title">우리의 기술 여정을<br/>함께 공유합니다</h1>
+      <p class="hero-description">
+        NXT 팀이 탐구하는 클라우드, AI, 개발 문화에 대한<br/>
+        깊이 있는 인사이트와 실전 경험을 담습니다.
+      </p>
+      <div class="hero-actions">
+        <a href="#posts" class="btn btn-primary">최신 글 보기</a>
+        <a href="{{ '/team' | relative_url }}" class="btn btn-outline">팀 소개</a>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="hero-orbs">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+      </div>
+      <div class="hero-stats">
+        <div class="stat">
+          <span class="stat-num">{{ site.posts | size }}</span>
+          <span class="stat-label">Posts</span>
+        </div>
+        <div class="stat">
+          <span class="stat-num">{{ site.authors | size }}</span>
+          <span class="stat-label">Authors</span>
+        </div>
+        <div class="stat">
+          <span class="stat-num">∞</span>
+          <span class="stat-label">Ideas</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% assign tags_array = "" | split: "" %}
+{% for post in site.posts %}
+  {% for tag in post.tags %}
+    {% unless tags_array contains tag %}
+      {% assign tags_array = tags_array | push: tag %}
+    {% endunless %}
+  {% endfor %}
+{% endfor %}
+
+{% if tags_array.size > 0 %}
+<section class="tags-section">
+  <div class="container">
+    <div class="tags-cloud">
+      <a href="{{ '/' | relative_url }}" class="tag-chip active">전체</a>
+      {% for tag in tags_array %}
+      <a href="{{ '/tags/' | append: tag | relative_url }}" class="tag-chip">{{ tag }}</a>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endif %}
+
+<section class="posts-section" id="posts">
+  <div class="container">
+    {% if site.posts.size > 0 %}
+      {% assign featured = site.posts | first %}
+      <div class="featured-post">
+        <a href="{{ featured.url | relative_url }}" class="featured-link">
+          <div class="featured-card">
+            <div class="featured-meta">
+              <span class="featured-badge">Featured</span>
+              {% if featured.tags.size > 0 %}
+              <span class="post-tag">{{ featured.tags | first }}</span>
+              {% endif %}
+            </div>
+            <h2 class="featured-title">{{ featured.title }}</h2>
+            <p class="featured-excerpt">{{ featured.excerpt | strip_html | truncate: 200 }}</p>
+            <div class="featured-footer">
+              {% assign author = site.authors | where: "short_name", featured.author | first %}
+              {% if author %}
+              <div class="author-info">
+                <div class="author-avatar-sm">{{ author.name | slice: 0 }}</div>
+                <span class="author-name">{{ author.name }}</span>
+              </div>
+              {% endif %}
+              <span class="post-date">{{ featured.date | date: "%Y.%m.%d" }}</span>
+              <span class="read-more">읽기 →</span>
+            </div>
+          </div>
+        </a>
+      </div>
+
+      <div class="posts-grid">
+        {% for post in site.posts offset: 1 limit: 6 %}
+        {% include post-card.html post=post %}
+        {% endfor %}
+      </div>
+
+      {% if site.posts.size > 7 %}
+      <div class="load-more">
+        <a href="{{ '/archive' | relative_url }}" class="btn btn-outline">모든 글 보기</a>
+      </div>
+      {% endif %}
+    {% else %}
+      <div class="empty-state">
+        <p>아직 작성된 글이 없습니다. 첫 번째 글을 작성해보세요!</p>
+      </div>
+    {% endif %}
+  </div>
+</section>
+
+<section class="team-preview">
+  <div class="container">
+    <div class="section-header">
+      <h2>팀을 소개합니다</h2>
+      <p>다양한 배경과 전문성을 가진 NXT 팀원들을 만나보세요.</p>
+    </div>
+    <div class="team-grid">
+      {% for author in site.authors limit: 4 %}
+      <a href="{{ author.url | relative_url }}" class="team-card">
+        <div class="team-avatar">{{ author.name | slice: 0 }}</div>
+        <h3>{{ author.name }}</h3>
+        <p class="team-role">{{ author.role }}</p>
+        <p class="team-bio">{{ author.bio | truncate: 80 }}</p>
+        <div class="team-tags">
+          {% for skill in author.skills limit: 3 %}
+          <span class="skill-tag">{{ skill }}</span>
+          {% endfor %}
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    {% if site.authors.size > 4 %}
+    <div class="load-more">
+      <a href="{{ '/team' | relative_url }}" class="btn btn-outline">전체 팀 보기</a>
+    </div>
+    {% endif %}
+  </div>
+</section>
