@@ -1,0 +1,402 @@
+---
+layout: null
+permalink: /login/
+---
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>로그인 | {{ site.title }}</title>
+  <link rel="icon" type="image/svg+xml" href="{{ '/assets/images/favicon.svg' | relative_url }}" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Sans+KR:wght@400;500&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f8f9fc;
+      --card-bg: #ffffff;
+      --border: #e5e7eb;
+      --text: #111827;
+      --text-muted: #6b7280;
+      --accent: #6366f1;
+      --accent-bg: #eff0ff;
+      --error: #ef4444;
+      --success: #10b981;
+      --font: 'Inter', 'Noto Sans KR', sans-serif;
+      --mono: 'JetBrains Mono', monospace;
+      --radius: 12px;
+      --shadow: 0 4px 24px rgba(0,0,0,0.08);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0f1117;
+        --card-bg: #1e2130;
+        --border: #2d3148;
+        --text: #e8eaf6;
+        --text-muted: #9094b0;
+        --accent: #818cf8;
+        --accent-bg: #1e2040;
+        --shadow: 0 4px 24px rgba(0,0,0,0.4);
+      }
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      width: 100%;
+      max-width: 400px;
+      padding: 40px 36px;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 32px;
+    }
+    .logo svg { flex-shrink: 0; }
+    .logo span { font-size: 18px; font-weight: 600; }
+
+    h1 {
+      font-size: 22px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .subtitle {
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-bottom: 28px;
+      line-height: 1.5;
+    }
+
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 8px;
+      font-family: var(--font);
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    .btn:active { transform: scale(0.98); }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+    .btn-primary:hover:not(:disabled) { opacity: 0.88; }
+
+    /* 코드 표시 영역 */
+    .code-box {
+      display: none;
+      margin-top: 24px;
+    }
+    .code-box.visible { display: block; }
+
+    .code-step {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+      line-height: 1.6;
+    }
+    .code-step strong { color: var(--text); }
+
+    .user-code {
+      font-family: var(--mono);
+      font-size: 28px;
+      font-weight: 500;
+      letter-spacing: 4px;
+      text-align: center;
+      color: var(--accent);
+      background: var(--accent-bg);
+      border-radius: 8px;
+      padding: 16px;
+      margin: 12px 0;
+    }
+
+    .open-github-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      padding: 10px;
+      margin-top: 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-family: var(--font);
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text);
+      background: transparent;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.15s;
+    }
+    .open-github-btn:hover { background: var(--accent-bg); }
+
+    .waiting {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 16px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    .spinner {
+      width: 14px;
+      height: 14px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .message {
+      margin-top: 20px;
+      padding: 12px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      line-height: 1.5;
+      display: none;
+    }
+    .message.visible { display: block; }
+    .message.error { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+    .message.success { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+
+    @media (prefers-color-scheme: dark) {
+      .message.error { background: #2d1515; color: #fca5a5; border-color: #7f1d1d; }
+      .message.success { background: #14290e; color: #86efac; border-color: #14532d; }
+    }
+
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 28px 0;
+    }
+
+    footer {
+      margin-top: 24px;
+      font-size: 12px;
+      color: var(--text-muted);
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+        <rect width="28" height="28" rx="8" fill="#6366f1"/>
+        <path d="M8 10h5l3 8 3-8h5" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>NXT Blog</span>
+    </div>
+
+    <h1>로그인</h1>
+    <p class="subtitle">NXT 팀원만 접근할 수 있습니다.<br>GitHub 계정으로 본인 확인을 해주세요.</p>
+
+    <button class="btn btn-primary" id="loginBtn" onclick="startLogin()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
+      </svg>
+      GitHub으로 로그인
+    </button>
+
+    <!-- 코드 표시 -->
+    <div class="code-box" id="codeBox">
+      <hr class="divider" />
+      <p class="code-step">
+        <strong>① 아래 코드를 복사하고</strong>
+      </p>
+      <div class="user-code" id="userCode">XXXX-XXXX</div>
+      <a class="open-github-btn" id="githubLink" href="https://github.com/login/device" target="_blank" rel="noopener">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
+        </svg>
+        ② github.com/login/device 에서 코드 입력
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      </a>
+      <div class="waiting" id="waiting">
+        <div class="spinner"></div>
+        <span>GitHub 승인 대기 중...</span>
+      </div>
+    </div>
+
+    <div class="message" id="message"></div>
+  </div>
+
+  <footer>
+    접근 문제가 있으면 팀 관리자에게 문의하세요.
+  </footer>
+
+  <script>
+    var CLIENT_ID = "{{ site.github_oauth.client_id }}";
+    var CLIENT_SECRET = "{{ site.github_oauth.client_secret }}";
+    var ALLOWED_USERS = {{ site.data.allowed_users.users | jsonify }};
+    var TOKEN_KEY = "nxt_gh_token";
+    var USER_KEY = "nxt_gh_user";
+    var CHECKED_AT_KEY = "nxt_checked_at";
+
+    var pollTimer = null;
+
+    function getRedirectUrl() {
+      var params = new URLSearchParams(window.location.search);
+      return params.get("redirect") || "{{ '/' | absolute_url }}";
+    }
+
+    function showMessage(text, type) {
+      var el = document.getElementById("message");
+      el.textContent = text;
+      el.className = "message visible " + type;
+    }
+
+    function setLoginBtn(loading) {
+      var btn = document.getElementById("loginBtn");
+      btn.disabled = loading;
+      btn.innerHTML = loading
+        ? '<div class="spinner" style="border-color:#fff3;border-top-color:#fff"></div> 요청 중...'
+        : '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg> GitHub으로 로그인';
+    }
+
+    function startLogin() {
+      if (pollTimer) clearInterval(pollTimer);
+      setLoginBtn(true);
+      document.getElementById("codeBox").classList.remove("visible");
+      document.getElementById("message").classList.remove("visible");
+
+      var xhr = new XMLHttpRequest();
+      xhr.open("POST", "https://github.com/login/device/code", true);
+      xhr.setRequestHeader("Accept", "application/json");
+      xhr.setRequestHeader("Content-Type", "application/json");
+      xhr.onreadystatechange = function () {
+        if (xhr.readyState !== 4) return;
+        setLoginBtn(false);
+        if (xhr.status === 200) {
+          try {
+            var data = JSON.parse(xhr.responseText);
+            showCodeBox(data);
+          } catch (e) {
+            showMessage("응답 파싱 오류. 다시 시도해주세요.", "error");
+          }
+        } else {
+          showMessage("GitHub 연결 오류 (" + xhr.status + "). 다시 시도해주세요.", "error");
+        }
+      };
+      xhr.onerror = function () {
+        setLoginBtn(false);
+        showMessage("네트워크 오류. 인터넷 연결을 확인하고 다시 시도해주세요.", "error");
+      };
+      xhr.send(JSON.stringify({ client_id: CLIENT_ID, scope: "read:user" }));
+    }
+
+    function showCodeBox(data) {
+      document.getElementById("userCode").textContent = data.user_code;
+      document.getElementById("githubLink").href = data.verification_uri || "https://github.com/login/device";
+      document.getElementById("codeBox").classList.add("visible");
+      document.getElementById("waiting").style.display = "flex";
+      startPolling(data.device_code, data.interval || 5);
+    }
+
+    function startPolling(deviceCode, interval) {
+      pollTimer = setInterval(function () {
+        var xhr = new XMLHttpRequest();
+        xhr.open("POST", "https://github.com/login/oauth/access_token", true);
+        xhr.setRequestHeader("Accept", "application/json");
+        xhr.setRequestHeader("Content-Type", "application/json");
+        xhr.onreadystatechange = function () {
+          if (xhr.readyState !== 4) return;
+          if (xhr.status !== 200) return;
+          try {
+            var data = JSON.parse(xhr.responseText);
+            if (data.access_token) {
+              clearInterval(pollTimer);
+              document.getElementById("waiting").style.display = "none";
+              verifyAndRedirect(data.access_token);
+            } else if (data.error === "access_denied") {
+              clearInterval(pollTimer);
+              showMessage("GitHub 승인이 거부되었습니다.", "error");
+            } else if (data.error === "expired_token") {
+              clearInterval(pollTimer);
+              showMessage("시간이 초과되었습니다. 다시 시도해주세요.", "error");
+              document.getElementById("codeBox").classList.remove("visible");
+            }
+            // authorization_pending → 계속 대기
+          } catch (e) { /* 무시 */ }
+        };
+        xhr.send(JSON.stringify({
+          client_id: CLIENT_ID,
+          client_secret: CLIENT_SECRET,
+          device_code: deviceCode,
+          grant_type: "urn:ietf:params:oauth:grant-type:device_code"
+        }));
+      }, interval * 1000);
+    }
+
+    function verifyAndRedirect(token) {
+      var xhr = new XMLHttpRequest();
+      xhr.open("GET", "https://api.github.com/user", true);
+      xhr.setRequestHeader("Authorization", "token " + token);
+      xhr.setRequestHeader("Accept", "application/vnd.github.v3+json");
+      xhr.onreadystatechange = function () {
+        if (xhr.readyState !== 4) return;
+        if (xhr.status === 200) {
+          var user = JSON.parse(xhr.responseText);
+          var username = user.login;
+          var allowed = ALLOWED_USERS.some(function (u) {
+            return u.toLowerCase() === username.toLowerCase();
+          });
+          if (allowed) {
+            localStorage.setItem(TOKEN_KEY, token);
+            localStorage.setItem(USER_KEY, username);
+            localStorage.setItem(CHECKED_AT_KEY, Date.now().toString());
+            showMessage("@" + username + " 님, 환영합니다!", "success");
+            setTimeout(function () {
+              window.location.href = getRedirectUrl();
+            }, 800);
+          } else {
+            showMessage("@" + username + " 은(는) 접근 권한이 없습니다. 팀 관리자에게 문의하세요.", "error");
+            document.getElementById("codeBox").classList.remove("visible");
+          }
+        } else {
+          showMessage("GitHub 사용자 정보를 가져오지 못했습니다.", "error");
+        }
+      };
+      xhr.send();
+    }
+
+    // 이미 로그인된 경우 바로 리디렉트
+    var params = new URLSearchParams(window.location.search);
+    if (params.get("reason") === "unauthorized") {
+      showMessage("접근 권한이 없습니다. 팀 관리자에게 문의하세요.", "error");
+    }
+  </script>
+</body>
+</html>

@@ -1334,3 +1334,15 @@ img { max-width: 100%; height: auto; display: block; }
 .text-center { text-align: center; }
 .mt-4 { margin-top: 16px; }
 .mb-4 { margin-bottom: 16px; }
+
+/* --- 로그인 사용자 표시 --- */
+.nav-user {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-secondary);
+}
