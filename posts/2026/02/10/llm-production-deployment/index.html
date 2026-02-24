@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LLM 서비스 프로덕션 배포: 비용과 성능의 균형 | NXT Team Blog</title>
+  <meta name="description" content="LLM 기반 서비스를 처음 론칭했을 때, 첫 달 API 비용이 예상의 10배가 나왔습니다. 이후 6개월간 비용을 92% 절감하면서 동시에 응답 속도도 40% 개선한 경험을 공유합니다." />
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="LLM 서비스 프로덕션 배포: 비용과 성능의 균형" />
+  <meta property="og:description" content="LLM 기반 서비스를 처음 론칭했을 때, 첫 달 API 비용이 예상의 10배가 나왔습니다. 이후 6개월간 비용을 92% 절감하면서 동시에 응답 속도도 40% 개선한 경험을 공유합니다." />
+  <meta property="og:type" content="article" />
+  <meta property="og:url" content="https://nxtcloud-org.github.io/nxt-team-blog/posts/2026/02/10/llm-production-deployment/" />
+  
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/svg+xml" href="/nxt-team-blog/assets/images/favicon.svg" />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet" />
+
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="/nxt-team-blog/assets/css/main.css" />
+
+  <!-- 인증 (콘텐츠 렌더링 전 실행) -->
+  <script src="/nxt-team-blog/assets/js/auth.js"></script>
+
+  <!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>LLM 서비스 프로덕션 배포: 비용과 성능의 균형 | NXT Team Blog</title>
+<meta name="generator" content="Jekyll v4.4.1" />
+<meta property="og:title" content="LLM 서비스 프로덕션 배포: 비용과 성능의 균형" />
+<meta name="author" content="soyeon" />
+<meta property="og:locale" content="ko" />
+<meta name="description" content="GPT-4 수준의 LLM 서비스를 프로덕션에 배포하면서 겪은 비용 폭탄과 성능 이슈를 어떻게 해결했는지 공유합니다." />
+<meta property="og:description" content="GPT-4 수준의 LLM 서비스를 프로덕션에 배포하면서 겪은 비용 폭탄과 성능 이슈를 어떻게 해결했는지 공유합니다." />
+<link rel="canonical" href="https://nxtcloud-org.github.io/nxt-team-blog/posts/2026/02/10/llm-production-deployment/" />
+<meta property="og:url" content="https://nxtcloud-org.github.io/nxt-team-blog/posts/2026/02/10/llm-production-deployment/" />
+<meta property="og:site_name" content="NXT Team Blog" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2026-02-10T02:00:00+00:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="LLM 서비스 프로덕션 배포: 비용과 성능의 균형" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"soyeon"},"dateModified":"2026-02-10T02:00:00+00:00","datePublished":"2026-02-10T02:00:00+00:00","description":"GPT-4 수준의 LLM 서비스를 프로덕션에 배포하면서 겪은 비용 폭탄과 성능 이슈를 어떻게 해결했는지 공유합니다.","headline":"LLM 서비스 프로덕션 배포: 비용과 성능의 균형","mainEntityOfPage":{"@type":"WebPage","@id":"https://nxtcloud-org.github.io/nxt-team-blog/posts/2026/02/10/llm-production-deployment/"},"url":"https://nxtcloud-org.github.io/nxt-team-blog/posts/2026/02/10/llm-production-deployment/"}</script>
+<!-- End Jekyll SEO tag -->
+
+  <link type="application/atom+xml" rel="alternate" href="https://nxtcloud-org.github.io/nxt-team-blog/feed.xml" title="NXT Team Blog" />
+</head>
+<body>
+  <header class="site-header">
+  <div class="container">
+    <nav class="nav">
+      <a href="/nxt-team-blog/" class="nav-logo">
+        <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+          <rect width="28" height="28" rx="8" fill="#6366f1"/>
+          <path d="M8 10h5l3 8 3-8h5" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>NXT Blog</span>
+      </a>
+
+      <ul class="nav-links">
+        <li><a href="/nxt-team-blog/" class="nav-link ">홈</a></li>
+        <li><a href="/nxt-team-blog/archive" class="nav-link ">아카이브</a></li>
+        <li><a href="/nxt-team-blog/team" class="nav-link ">팀</a></li>
+        <li><a href="/nxt-team-blog/about" class="nav-link ">소개</a></li>
+      </ul>
+
+      <div class="nav-actions">
+        <span class="nav-user" id="navUser" style="display:none">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <span id="navUsername"></span>
+        </span>
+        <button class="btn btn-sm btn-ghost" id="logoutBtn" style="display:none" onclick="window.nxtLogout && window.nxtLogout()">
+          로그아웃
+        </button>
+        <button class="theme-toggle" id="themeToggle" aria-label="테마 변경">
+          <svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+          <svg class="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+        <a href="/nxt-team-blog/admin/" class="btn btn-sm btn-ghost" title="글쓰기">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          글쓰기
+        </a>
+        <a href="https://github.com/nxtcloud-org" target="_blank" rel="noopener" class="btn btn-sm btn-ghost">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+          GitHub
+        </a>
+      </div>
+
+      <button class="mobile-menu-btn" id="mobileMenuBtn" aria-label="메뉴">
+        <span></span><span></span><span></span>
+      </button>
+    </nav>
+  </div>
+
+  <div class="mobile-menu" id="mobileMenu">
+    <ul>
+      <li><a href="/nxt-team-blog/">홈</a></li>
+      <li><a href="/nxt-team-blog/archive">아카이브</a></li>
+      <li><a href="/nxt-team-blog/team">팀</a></li>
+      <li><a href="/nxt-team-blog/about">소개</a></li>
+      <li><a href="/nxt-team-blog/admin/">✏️ 글쓰기</a></li>
+      <li><a href="https://github.com/nxtcloud-org" target="_blank" rel="noopener">GitHub ↗</a></li>
+    </ul>
+  </div>
+</header>
+
+
+  <main class="main-content">
+    <article class="post-page">
+  <div class="post-hero">
+    <div class="container">
+      <div class="post-hero-inner">
+        <div class="post-breadcrumb">
+          <a href="/nxt-team-blog/">Home</a>
+          <span>/</span>
+          <span>Posts</span>
+        </div>
+
+        <div class="post-tags-top">
+          
+          <a href="/nxt-team-blog/tags/AI" class="post-tag">AI</a>
+          
+          <a href="/nxt-team-blog/tags/LLM" class="post-tag">LLM</a>
+          
+          <a href="/nxt-team-blog/tags/MLOps" class="post-tag">MLOps</a>
+          
+        </div>
+
+        <h1 class="post-title">LLM 서비스 프로덕션 배포: 비용과 성능의 균형</h1>
+
+        
+        <p class="post-description">GPT-4 수준의 LLM 서비스를 프로덕션에 배포하면서 겪은 비용 폭탄과 성능 이슈를 어떻게 해결했는지 공유합니다.</p>
+        
+
+        <div class="post-meta-bar">
+          
+          
+          <a href="/nxt-team-blog/team/soyeon/" class="author-info">
+            <div class="author-avatar-sm" style="background: #8b5cf6">이</div>
+            <div>
+              <span class="author-name">이소연</span>
+              <span class="author-role-sm">AI/ML Engineer</span>
+            </div>
+          </a>
+          
+          <div class="post-meta-details">
+            <span class="post-date">2026년 02월 10일</span>
+            <span class="dot">·</span>
+            <span class="read-time">6분 읽기</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="container post-container">
+    <div class="post-layout">
+      <div class="post-body">
+        <div class="post-content">
+          <p>LLM 기반 서비스를 처음 론칭했을 때, 첫 달 API 비용이 예상의 10배가 나왔습니다. 이후 6개월간 비용을 92% 절감하면서 동시에 응답 속도도 40% 개선한 경험을 공유합니다.</p>
+
+<h2 id="문제-진단-어디서-돈이-새나">문제 진단: 어디서 돈이 새나</h2>
+
+<p>처음에는 모든 요청에 GPT-4를 사용했습니다. 사용자가 “안녕”이라고 입력해도 GPT-4가 응답했죠. 토큰 사용량을 분석해보니:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>요청 유형</th>
+      <th>비율</th>
+      <th>평균 토큰</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>단순 질의응답</td>
+      <td>65%</td>
+      <td>800 tokens</td>
+    </tr>
+    <tr>
+      <td>복잡한 추론</td>
+      <td>20%</td>
+      <td>3,200 tokens</td>
+    </tr>
+    <tr>
+      <td>코드 생성</td>
+      <td>15%</td>
+      <td>4,500 tokens</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>단순 질의응답이 전체의 65%인데 GPT-4를 쓰고 있었습니다.</p>
+
+<h2 id="솔루션-1-라우팅-레이어-도입">솔루션 1: 라우팅 레이어 도입</h2>
+
+<p>요청의 복잡도를 분류해 적절한 모델로 라우팅합니다.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="n">enum</span> <span class="kn">import</span> <span class="n">Enum</span>
+
+<span class="k">class</span> <span class="nc">Complexity</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+    <span class="n">SIMPLE</span> <span class="o">=</span> <span class="sh">"</span><span class="s">simple</span><span class="sh">"</span>
+    <span class="n">MEDIUM</span> <span class="o">=</span> <span class="sh">"</span><span class="s">medium</span><span class="sh">"</span>
+    <span class="n">COMPLEX</span> <span class="o">=</span> <span class="sh">"</span><span class="s">complex</span><span class="sh">"</span>
+
+<span class="k">class</span> <span class="nc">ModelRouter</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="n">self</span><span class="p">):</span>
+        <span class="n">self</span><span class="p">.</span><span class="n">models</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">Complexity</span><span class="p">.</span><span class="n">SIMPLE</span><span class="p">:</span> <span class="sh">"</span><span class="s">gpt-3.5-turbo</span><span class="sh">"</span><span class="p">,</span>
+            <span class="n">Complexity</span><span class="p">.</span><span class="n">MEDIUM</span><span class="p">:</span> <span class="sh">"</span><span class="s">gpt-4o-mini</span><span class="sh">"</span><span class="p">,</span>
+            <span class="n">Complexity</span><span class="p">.</span><span class="n">COMPLEX</span><span class="p">:</span> <span class="sh">"</span><span class="s">gpt-4o</span><span class="sh">"</span><span class="p">,</span>
+        <span class="p">}</span>
+
+    <span class="k">def</span> <span class="nf">classify</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Complexity</span><span class="p">:</span>
+        <span class="c1"># 간단한 휴리스틱으로 분류
+</span>        <span class="n">tokens</span> <span class="o">=</span> <span class="nf">len</span><span class="p">(</span><span class="n">query</span><span class="p">.</span><span class="nf">split</span><span class="p">())</span>
+
+        <span class="k">if</span> <span class="n">tokens</span> <span class="o">&lt;</span> <span class="mi">20</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">context</span><span class="p">.</span><span class="nf">get</span><span class="p">(</span><span class="sh">"</span><span class="s">requires_reasoning</span><span class="sh">"</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">Complexity</span><span class="p">.</span><span class="n">SIMPLE</span>
+        <span class="k">elif</span> <span class="n">tokens</span> <span class="o">&lt;</span> <span class="mi">100</span> <span class="ow">or</span> <span class="n">context</span><span class="p">.</span><span class="nf">get</span><span class="p">(</span><span class="sh">"</span><span class="s">is_code_task</span><span class="sh">"</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">Complexity</span><span class="p">.</span><span class="n">MEDIUM</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">Complexity</span><span class="p">.</span><span class="n">COMPLEX</span>
+
+    <span class="k">def</span> <span class="nf">get_model</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">complexity</span> <span class="o">=</span> <span class="n">self</span><span class="p">.</span><span class="nf">classify</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">context</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">self</span><span class="p">.</span><span class="n">models</span><span class="p">[</span><span class="n">complexity</span><span class="p">]</span>
+</code></pre></div></div>
+
+<p>이것만으로 비용의 60%가 절감됐습니다.</p>
+
+<h2 id="솔루션-2-시맨틱-캐싱">솔루션 2: 시맨틱 캐싱</h2>
+
+<p>동일하거나 유사한 질문에 대해 캐시된 응답을 반환합니다.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="n">numpy</span> <span class="k">as</span> <span class="n">np</span>
+<span class="kn">from</span> <span class="n">redis</span> <span class="kn">import</span> <span class="n">Redis</span>
+<span class="kn">import</span> <span class="n">pickle</span>
+
+<span class="k">class</span> <span class="nc">SemanticCache</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">redis_client</span><span class="p">:</span> <span class="n">Redis</span><span class="p">,</span> <span class="n">threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.92</span><span class="p">):</span>
+        <span class="n">self</span><span class="p">.</span><span class="n">redis</span> <span class="o">=</span> <span class="n">redis_client</span>
+        <span class="n">self</span><span class="p">.</span><span class="n">threshold</span> <span class="o">=</span> <span class="n">threshold</span>
+        <span class="n">self</span><span class="p">.</span><span class="n">embedder</span> <span class="o">=</span> <span class="nf">load_embedding_model</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">query_embedding</span> <span class="o">=</span> <span class="n">self</span><span class="p">.</span><span class="n">embedder</span><span class="p">.</span><span class="nf">encode</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+
+        <span class="c1"># 저장된 모든 임베딩과 코사인 유사도 계산
+</span>        <span class="n">cached_keys</span> <span class="o">=</span> <span class="n">self</span><span class="p">.</span><span class="n">redis</span><span class="p">.</span><span class="nf">keys</span><span class="p">(</span><span class="sh">"</span><span class="s">cache:embed:*</span><span class="sh">"</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">cached_keys</span><span class="p">:</span>
+            <span class="n">cached_embed</span> <span class="o">=</span> <span class="n">pickle</span><span class="p">.</span><span class="nf">loads</span><span class="p">(</span><span class="n">self</span><span class="p">.</span><span class="n">redis</span><span class="p">.</span><span class="nf">get</span><span class="p">(</span><span class="n">key</span><span class="p">))</span>
+            <span class="n">similarity</span> <span class="o">=</span> <span class="n">self</span><span class="p">.</span><span class="nf">_cosine_sim</span><span class="p">(</span><span class="n">query_embedding</span><span class="p">,</span> <span class="n">cached_embed</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">similarity</span> <span class="o">&gt;=</span> <span class="n">self</span><span class="p">.</span><span class="n">threshold</span><span class="p">:</span>
+                <span class="n">response_key</span> <span class="o">=</span> <span class="n">key</span><span class="p">.</span><span class="nf">replace</span><span class="p">(</span><span class="sa">b</span><span class="sh">"</span><span class="s">embed:</span><span class="sh">"</span><span class="p">,</span> <span class="sa">b</span><span class="sh">"</span><span class="s">resp:</span><span class="sh">"</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">self</span><span class="p">.</span><span class="n">redis</span><span class="p">.</span><span class="nf">get</span><span class="p">(</span><span class="n">response_key</span><span class="p">).</span><span class="nf">decode</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="bp">None</span>
+
+    <span class="k">def</span> <span class="nf">set</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">response</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">ttl</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3600</span><span class="p">):</span>
+        <span class="n">cache_id</span> <span class="o">=</span> <span class="nf">generate_id</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+        <span class="n">embedding</span> <span class="o">=</span> <span class="n">self</span><span class="p">.</span><span class="n">embedder</span><span class="p">.</span><span class="nf">encode</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+
+        <span class="n">self</span><span class="p">.</span><span class="n">redis</span><span class="p">.</span><span class="nf">setex</span><span class="p">(</span><span class="sa">f</span><span class="sh">"</span><span class="s">cache:embed:</span><span class="si">{</span><span class="n">cache_id</span><span class="si">}</span><span class="sh">"</span><span class="p">,</span> <span class="n">ttl</span><span class="p">,</span> <span class="n">pickle</span><span class="p">.</span><span class="nf">dumps</span><span class="p">(</span><span class="n">embedding</span><span class="p">))</span>
+        <span class="n">self</span><span class="p">.</span><span class="n">redis</span><span class="p">.</span><span class="nf">setex</span><span class="p">(</span><span class="sa">f</span><span class="sh">"</span><span class="s">cache:resp:</span><span class="si">{</span><span class="n">cache_id</span><span class="si">}</span><span class="sh">"</span><span class="p">,</span> <span class="n">ttl</span><span class="p">,</span> <span class="n">response</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_cosine_sim</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">np</span><span class="p">.</span><span class="nf">dot</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="n">linalg</span><span class="p">.</span><span class="nf">norm</span><span class="p">(</span><span class="n">a</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="p">.</span><span class="n">linalg</span><span class="p">.</span><span class="nf">norm</span><span class="p">(</span><span class="n">b</span><span class="p">))</span>
+</code></pre></div></div>
+
+<p>캐시 히트율이 안정화된 이후 32%로, 추가로 32%의 비용이 절감됐습니다.</p>
+
+<h2 id="솔루션-3-스트리밍과-청크-처리">솔루션 3: 스트리밍과 청크 처리</h2>
+
+<p>긴 응답을 기다리는 동안 사용자는 이탈합니다. 스트리밍으로 첫 토큰 도달 시간(TTFT)을 줄입니다.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">async</span> <span class="k">def</span> <span class="nf">stream_response</span><span class="p">(</span><span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="k">async</span> <span class="k">with</span> <span class="n">aiohttp</span><span class="p">.</span><span class="nc">ClientSession</span><span class="p">()</span> <span class="k">as</span> <span class="n">session</span><span class="p">:</span>
+        <span class="k">async</span> <span class="k">with</span> <span class="n">session</span><span class="p">.</span><span class="nf">post</span><span class="p">(</span>
+            <span class="sh">"</span><span class="s">https://api.openai.com/v1/chat/completions</span><span class="sh">"</span><span class="p">,</span>
+            <span class="n">json</span><span class="o">=</span><span class="p">{</span>
+                <span class="sh">"</span><span class="s">model</span><span class="sh">"</span><span class="p">:</span> <span class="sh">"</span><span class="s">gpt-4o</span><span class="sh">"</span><span class="p">,</span>
+                <span class="sh">"</span><span class="s">messages</span><span class="sh">"</span><span class="p">:</span> <span class="p">[{</span><span class="sh">"</span><span class="s">role</span><span class="sh">"</span><span class="p">:</span> <span class="sh">"</span><span class="s">user</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">content</span><span class="sh">"</span><span class="p">:</span> <span class="n">query</span><span class="p">}],</span>
+                <span class="sh">"</span><span class="s">stream</span><span class="sh">"</span><span class="p">:</span> <span class="bp">True</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="sh">"</span><span class="s">Authorization</span><span class="sh">"</span><span class="p">:</span> <span class="sa">f</span><span class="sh">"</span><span class="s">Bearer </span><span class="si">{</span><span class="n">API_KEY</span><span class="si">}</span><span class="sh">"</span><span class="p">},</span>
+        <span class="p">)</span> <span class="k">as</span> <span class="n">response</span><span class="p">:</span>
+            <span class="k">async</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">response</span><span class="p">.</span><span class="n">content</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">line</span><span class="p">.</span><span class="nf">startswith</span><span class="p">(</span><span class="sa">b</span><span class="sh">"</span><span class="s">data: </span><span class="sh">"</span><span class="p">):</span>
+                    <span class="n">data</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="mi">6</span><span class="p">:].</span><span class="nf">decode</span><span class="p">().</span><span class="nf">strip</span><span class="p">()</span>
+                    <span class="k">if</span> <span class="n">data</span> <span class="o">==</span> <span class="sh">"</span><span class="s">[DONE]</span><span class="sh">"</span><span class="p">:</span>
+                        <span class="k">break</span>
+                    <span class="n">chunk</span> <span class="o">=</span> <span class="n">json</span><span class="p">.</span><span class="nf">loads</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">content</span> <span class="p">:</span><span class="o">=</span> <span class="n">chunk</span><span class="p">[</span><span class="sh">"</span><span class="s">choices</span><span class="sh">"</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="sh">"</span><span class="s">delta</span><span class="sh">"</span><span class="p">].</span><span class="nf">get</span><span class="p">(</span><span class="sh">"</span><span class="s">content</span><span class="sh">"</span><span class="p">):</span>
+                        <span class="k">yield</span> <span class="n">content</span>
+</code></pre></div></div>
+
+<p>TTFT가 3.2초에서 0.4초로 줄어 사용자 이탈률이 45% 감소했습니다.</p>
+
+<h2 id="결과-정리">결과 정리</h2>
+
+<p>6개월간의 최적화 결과:</p>
+
+<ul>
+  <li><strong>월 비용</strong>: $48,000 → $3,840 (92% 절감)</li>
+  <li><strong>평균 응답 시간</strong>: 4.1초 → 2.4초</li>
+  <li><strong>TTFT</strong>: 3.2초 → 0.4초</li>
+  <li><strong>사용자 만족도</strong>: 3.4점 → 4.2점 (5점 만점)</li>
+</ul>
+
+<p>비용 절감이 오히려 성능 향상으로 이어진 경우입니다. 복잡도에 맞는 모델을 사용하니 더 빠른 응답이 가능했고, 캐싱으로 반복 질문에 즉시 응답하게 됐습니다.</p>
+
+<p>다음 포스트에서는 LLM 응답 품질 평가 시스템 구축에 대해 다루겠습니다.</p>
+
+        </div>
+
+        <div class="post-footer">
+          <div class="post-tags-bottom">
+            <strong>태그:</strong>
+            
+            <a href="/nxt-team-blog/tags/AI" class="post-tag">AI</a>
+            
+            <a href="/nxt-team-blog/tags/LLM" class="post-tag">LLM</a>
+            
+            <a href="/nxt-team-blog/tags/MLOps" class="post-tag">MLOps</a>
+            
+          </div>
+
+          
+          <div class="author-card">
+            <div class="author-avatar-lg" style="background: #8b5cf6">이</div>
+            <div class="author-card-info">
+              <h3>이소연</h3>
+              <p class="author-role">AI/ML Engineer</p>
+              <p>대규모 언어 모델과 MLOps 전문가. AI 서비스의 프로덕션 배포와 모니터링 시스템 구축 경험이 있습니다. 논문 읽기와 실험을 즐깁니다.</p>
+              <div class="author-links">
+                <a href="https://github.com/soyeon-lee" target="_blank" rel="noopener">GitHub</a>
+                
+                <a href="https://linkedin.com/in/soyeon-lee" target="_blank" rel="noopener">LinkedIn</a>
+              </div>
+            </div>
+          </div>
+          
+        </div>
+
+        <nav class="post-nav">
+          
+          <a href="/nxt-team-blog/posts/2026/01/28/react-performance-optimization/" class="post-nav-link prev">
+            <span class="nav-label">← 이전 글</span>
+            <span class="nav-title">React 앱 성능 최적화: Core Web Vitals 개선기</span>
+          </a>
+          
+          
+          <a href="/nxt-team-blog/posts/2026/02/18/go-microservices-performance/" class="post-nav-link next">
+            <span class="nav-label">다음 글 →</span>
+            <span class="nav-title">Go 마이크로서비스 성능 최적화 경험기</span>
+          </a>
+          
+        </nav>
+      </div>
+
+      <aside class="post-sidebar">
+        <div class="toc-card sticky-card">
+          <h4 class="toc-title">목차</h4>
+          <div class="toc-content" id="toc"></div>
+        </div>
+
+        
+        
+      </aside>
+    </div>
+  </div>
+</article>
+
+  </main>
+
+  <footer class="site-footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a href="/nxt-team-blog/" class="nav-logo">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+            <rect width="28" height="28" rx="8" fill="#6366f1"/>
+            <path d="M8 10h5l3 8 3-8h5" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>NXT Blog</span>
+        </a>
+        <p>NXT 팀의 기술 블로그입니다. 클라우드, AI, 개발 문화에 대한 경험과 인사이트를 공유합니다.</p>
+        <div class="footer-social">
+          
+          <a href="https://github.com/nxtcloud-org" target="_blank" rel="noopener" aria-label="GitHub">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+          </a>
+          
+          
+          <a href="https://twitter.com/nxtcloud" target="_blank" rel="noopener" aria-label="Twitter">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+          </a>
+          
+          <a href="/nxt-team-blog/feed.xml" aria-label="RSS Feed">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M6.18 15.64a2.18 2.18 0 0 1 2.18 2.18C8.36 19.01 7.38 20 6.18 20C4.98 20 4 19.01 4 17.82a2.18 2.18 0 0 1 2.18-2.18M4 4.44A15.56 15.56 0 0 1 19.56 20h-2.83A12.73 12.73 0 0 0 4 7.27V4.44m0 5.66a9.9 9.9 0 0 1 9.9 9.9h-2.83A7.07 7.07 0 0 0 4 12.93V10.1z"/></svg>
+          </a>
+        </div>
+      </div>
+
+      <div class="footer-links">
+        <h4>탐색</h4>
+        <ul>
+          <li><a href="/nxt-team-blog/">홈</a></li>
+          <li><a href="/nxt-team-blog/archive">아카이브</a></li>
+          <li><a href="/nxt-team-blog/team">팀</a></li>
+          <li><a href="/nxt-team-blog/about">소개</a></li>
+        </ul>
+      </div>
+
+      <div class="footer-links">
+        <h4>최근 글</h4>
+        <ul>
+          
+          <li><a href="/nxt-team-blog/posts/2026/02/24/jayden/">jayden</a></li>
+          
+          <li><a href="/nxt-team-blog/posts/2026/02/24/%ED%85%8C%EC%8A%A4%ED%8A%B8/">테스트</a></li>
+          
+          <li><a href="/nxt-team-blog/posts/2026/02/24/kubernetes-production-best-practices/">쿠버네티스 프로덕션 운영 실전 가이드</a></li>
+          
+          <li><a href="/nxt-team-blog/posts/2026/02/18/go-microservices-performance/">Go 마이크로서비스 성능 최적화 경험기</a></li>
+          
+        </ul>
+      </div>
+
+      <div class="footer-links">
+        <h4>팀원</h4>
+        <ul>
+          
+          <li><a href="/nxt-team-blog/team/hyunwoo/">최현우</a></li>
+          
+          <li><a href="/nxt-team-blog/team/jiwon/">김지원</a></li>
+          
+          <li><a href="/nxt-team-blog/team/minjun/">박민준</a></li>
+          
+          <li><a href="/nxt-team-blog/team/soyeon/">이소연</a></li>
+          
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <p>&copy; 2026 NXT Team. MIT License.</p>
+      <p>Built with <a href="https://jekyllrb.com" target="_blank" rel="noopener">Jekyll</a> & hosted on <a href="https://pages.github.com" target="_blank" rel="noopener">GitHub Pages</a></p>
+    </div>
+  </div>
+</footer>
+
+
+  <script src="/nxt-team-blog/assets/js/main.js"></script>
+  <script>
+    (function () {
+      var username = localStorage.getItem("nxt_gh_user");
+      if (!username) return;
+      var userEl = document.getElementById("navUser");
+      var nameEl = document.getElementById("navUsername");
+      var logoutEl = document.getElementById("logoutBtn");
+      if (userEl) userEl.style.display = "flex";
+      if (nameEl) nameEl.textContent = "@" + username;
+      if (logoutEl) logoutEl.style.display = "";
+    })();
+  </script>
+</body>
+</html>

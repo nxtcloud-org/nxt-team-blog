@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>로그인 | NXT Team Blog</title>
+  <link rel="icon" type="image/svg+xml" href="/nxt-team-blog/assets/images/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Sans+KR:wght@400;500&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f8f9fc;
+      --card-bg: #ffffff;
+      --border: #e5e7eb;
+      --text: #111827;
+      --text-muted: #6b7280;
+      --accent: #6366f1;
+      --accent-bg: #eff0ff;
+      --font: 'Inter', 'Noto Sans KR', sans-serif;
+      --mono: 'JetBrains Mono', monospace;
+      --radius: 12px;
+      --shadow: 0 4px 24px rgba(0,0,0,0.08);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0f1117; --card-bg: #1e2130; --border: #2d3148;
+        --text: #e8eaf6; --text-muted: #9094b0;
+        --accent: #818cf8; --accent-bg: #1e2040;
+        --shadow: 0 4px 24px rgba(0,0,0,0.4);
+      }
+    }
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      width: 100%;
+      max-width: 420px;
+      padding: 40px 36px;
+    }
+    .logo { display: flex; align-items: center; gap: 10px; margin-bottom: 32px; }
+    .logo span { font-size: 18px; font-weight: 600; }
+    h1 { font-size: 22px; font-weight: 600; margin-bottom: 8px; }
+    .subtitle { font-size: 14px; color: var(--text-muted); margin-bottom: 28px; line-height: 1.6; }
+
+    .steps {
+      background: var(--accent-bg);
+      border-radius: 8px;
+      padding: 16px 18px;
+      margin-bottom: 20px;
+      font-size: 13px;
+      line-height: 1.8;
+      color: var(--text-muted);
+    }
+    .steps strong { color: var(--text); }
+    .steps a { color: var(--accent); text-decoration: none; font-weight: 500; }
+    .steps a:hover { text-decoration: underline; }
+
+    label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px; }
+    input[type="password"] {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-family: var(--mono);
+      font-size: 13px;
+      background: var(--bg);
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    input[type="password"]:focus { border-color: var(--accent); }
+    input[type="password"]::placeholder { color: var(--text-muted); font-family: var(--font); font-size: 13px; }
+
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      margin-top: 14px;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 8px;
+      font-family: var(--font);
+      font-size: 15px;
+      font-weight: 500;
+      background: var(--accent);
+      color: #fff;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    .btn:active { transform: scale(0.98); }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+    .spinner {
+      width: 14px; height: 14px;
+      border: 2px solid rgba(255,255,255,0.4);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .message {
+      margin-top: 16px;
+      padding: 12px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      line-height: 1.5;
+      display: none;
+    }
+    .message.visible { display: block; }
+    .message.error { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+    .message.success { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+    @media (prefers-color-scheme: dark) {
+      .message.error { background: #2d1515; color: #fca5a5; border-color: #7f1d1d; }
+      .message.success { background: #14290e; color: #86efac; border-color: #14532d; }
+    }
+
+    footer { margin-top: 24px; font-size: 12px; color: var(--text-muted); text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+        <rect width="28" height="28" rx="8" fill="#6366f1"/>
+        <path d="M8 10h5l3 8 3-8h5" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>NXT Blog</span>
+    </div>
+
+    <h1>팀원 인증</h1>
+    <p class="subtitle">글쓰기는 팀원만 가능합니다.<br>GitHub Personal Access Token으로 본인 확인을 해주세요.</p>
+
+    <div class="steps">
+      <strong>토큰 발급 방법</strong><br>
+      1. <a href="https://github.com/settings/tokens/new?scopes=read:user&description=NXT+Blog" target="_blank" rel="noopener">GitHub 토큰 발급 페이지 →</a><br>
+      2. <strong>Expiration</strong>: 원하는 기간 선택<br>
+      3. <strong>Generate token</strong> 클릭 후 복사<br>
+      4. 아래에 붙여넣기
+    </div>
+
+    <label for="patInput">Personal Access Token</label>
+    <input type="password" id="patInput" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" autocomplete="off" />
+
+    <button class="btn" id="submitBtn" onclick="verify()">
+      확인
+    </button>
+
+    <div class="message" id="message"></div>
+  </div>
+
+  <footer>접근 문제가 있으면 팀 관리자에게 문의하세요.</footer>
+
+  <script>
+    var ALLOWED_USERS = ["octocat"];
+    var TOKEN_KEY = "nxt_gh_token";
+    var USER_KEY = "nxt_gh_user";
+    var CHECKED_AT_KEY = "nxt_checked_at";
+
+    function getRedirectUrl() {
+      var params = new URLSearchParams(window.location.search);
+      return params.get("redirect") || "https://nxtcloud-org.github.io/nxt-team-blog/admin/";
+    }
+
+    function showMessage(text, type) {
+      var el = document.getElementById("message");
+      el.textContent = text;
+      el.className = "message visible " + type;
+    }
+
+    function setLoading(on) {
+      var btn = document.getElementById("submitBtn");
+      btn.disabled = on;
+      btn.innerHTML = on
+        ? '<div class="spinner"></div> 확인 중...'
+        : '확인';
+    }
+
+    // 입력창에서 Enter 키 지원
+    document.getElementById("patInput").addEventListener("keydown", function (e) {
+      if (e.key === "Enter") verify();
+    });
+
+    function verify() {
+      var token = document.getElementById("patInput").value.trim();
+      if (!token) { showMessage("토큰을 입력해주세요.", "error"); return; }
+
+      setLoading(true);
+      document.getElementById("message").classList.remove("visible");
+
+      // api.github.com은 CORS를 지원합니다
+      fetch("https://api.github.com/user", {
+        headers: {
+          "Authorization": "token " + token,
+          "Accept": "application/vnd.github.v3+json"
+        }
+      })
+      .then(function (res) {
+        if (!res.ok) throw new Error("invalid_token");
+        return res.json();
+      })
+      .then(function (user) {
+        var username = user.login;
+        var allowed = ALLOWED_USERS.some(function (u) {
+          return u.toLowerCase() === username.toLowerCase();
+        });
+        if (allowed) {
+          localStorage.setItem(TOKEN_KEY, token);
+          localStorage.setItem(USER_KEY, username);
+          localStorage.setItem(CHECKED_AT_KEY, Date.now().toString());
+          showMessage("@" + username + " 님, 환영합니다!", "success");
+          setTimeout(function () { window.location.href = getRedirectUrl(); }, 700);
+        } else {
+          setLoading(false);
+          showMessage("@" + username + " 은(는) 접근 권한이 없습니다. 팀 관리자에게 문의하세요.", "error");
+        }
+      })
+      .catch(function (err) {
+        setLoading(false);
+        if (err.message === "invalid_token") {
+          showMessage("토큰이 올바르지 않습니다. 다시 확인해주세요.", "error");
+        } else {
+          showMessage("네트워크 오류가 발생했습니다. 잠시 후 다시 시도해주세요.", "error");
+        }
+      });
+    }
+
+    // unauthorized 파라미터 처리
+    if (new URLSearchParams(window.location.search).get("reason") === "unauthorized") {
+      showMessage("접근 권한이 없습니다. 팀 관리자에게 문의하세요.", "error");
+    }
+  </script>
+</body>
+</html>

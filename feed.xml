@@ -1,0 +1,576 @@
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" xml:lang="ko"><generator uri="https://jekyllrb.com/" version="4.4.1">Jekyll</generator><link href="https://nxtcloud-org.github.io/nxt-team-blog/feed.xml" rel="self" type="application/atom+xml" /><link href="https://nxtcloud-org.github.io/nxt-team-blog/" rel="alternate" type="text/html" hreflang="ko" /><updated>2026-02-24T10:32:59+00:00</updated><id>https://nxtcloud-org.github.io/nxt-team-blog/feed.xml</id><title type="html">NXT Team Blog</title><subtitle>NXT 팀의 기술 블로그 - 우리의 경험과 인사이트를 공유합니다.</subtitle><author><name>NXT Team</name></author><entry><title type="html">jayden</title><link href="https://nxtcloud-org.github.io/nxt-team-blog/posts/2026/02/24/jayden/" rel="alternate" type="text/html" title="jayden" /><published>2026-02-24T10:32:00+00:00</published><updated>2026-02-24T10:32:00+00:00</updated><id>https://nxtcloud-org.github.io/nxt-team-blog/posts/2026/02/24/jayden</id><content type="html" xml:base="https://nxtcloud-org.github.io/nxt-team-blog/posts/2026/02/24/jayden/"><![CDATA[<p>jayden</p>]]></content><author><name>hyunwoo</name></author><summary type="html"><![CDATA[jayden]]></summary></entry><entry><title type="html">테스트</title><link href="https://nxtcloud-org.github.io/nxt-team-blog/posts/2026/02/24/%ED%85%8C%EC%8A%A4%ED%8A%B8/" rel="alternate" type="text/html" title="테스트" /><published>2026-02-24T09:38:00+00:00</published><updated>2026-02-24T09:38:00+00:00</updated><id>https://nxtcloud-org.github.io/nxt-team-blog/posts/2026/02/24/%ED%85%8C%EC%8A%A4%ED%8A%B8</id><content type="html" xml:base="https://nxtcloud-org.github.io/nxt-team-blog/posts/2026/02/24/%ED%85%8C%EC%8A%A4%ED%8A%B8/"><![CDATA[<p>ㅇㅇ</p>]]></content><author><name>minjun</name></author><summary type="html"><![CDATA[ㅇㅇ]]></summary></entry><entry><title type="html">쿠버네티스 프로덕션 운영 실전 가이드</title><link href="https://nxtcloud-org.github.io/nxt-team-blog/posts/2026/02/24/kubernetes-production-best-practices/" rel="alternate" type="text/html" title="쿠버네티스 프로덕션 운영 실전 가이드" /><published>2026-02-24T01:00:00+00:00</published><updated>2026-02-24T01:00:00+00:00</updated><id>https://nxtcloud-org.github.io/nxt-team-blog/posts/2026/02/24/kubernetes-production-best-practices</id><content type="html" xml:base="https://nxtcloud-org.github.io/nxt-team-blog/posts/2026/02/24/kubernetes-production-best-practices/"><![CDATA[<p>NXT 팀에서 2년간 쿠버네티스를 프로덕션에서 운영하면서 경험한 것들을 정리합니다. 처음에는 단순히 “컨테이너를 오케스트레이션하는 도구”로 시작했지만, 이제는 우리 인프라의 핵심이 되었습니다.</p>
+
+<h2 id="리소스-요청과-제한-설정">리소스 요청과 제한 설정</h2>
+
+<p>가장 먼저 배운 교훈은 <strong>모든 파드에 리소스 요청과 제한을 명시해야 한다</strong>는 것입니다.</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">resources</span><span class="pi">:</span>
+  <span class="na">requests</span><span class="pi">:</span>
+    <span class="na">memory</span><span class="pi">:</span> <span class="s2">"</span><span class="s">128Mi"</span>
+    <span class="na">cpu</span><span class="pi">:</span> <span class="s2">"</span><span class="s">100m"</span>
+  <span class="na">limits</span><span class="pi">:</span>
+    <span class="na">memory</span><span class="pi">:</span> <span class="s2">"</span><span class="s">256Mi"</span>
+    <span class="na">cpu</span><span class="pi">:</span> <span class="s2">"</span><span class="s">500m"</span>
+</code></pre></div></div>
+
+<p>처음에는 귀찮아서 이 설정을 생략했다가 노드가 OOM Killer에 의해 파드를 무작위로 종료하는 상황을 겪었습니다. 특히 <code class="language-plaintext highlighter-rouge">requests</code>와 <code class="language-plaintext highlighter-rouge">limits</code>의 차이를 이해하는 것이 중요합니다.</p>
+
+<ul>
+  <li><strong>requests</strong>: 스케줄링 시 보장되는 최소 리소스</li>
+  <li><strong>limits</strong>: 파드가 사용할 수 있는 최대 리소스</li>
+</ul>
+
+<blockquote>
+  <p>QoS 클래스를 Guaranteed로 만들려면 requests와 limits를 동일하게 설정하세요. 이렇게 하면 OOM 상황에서 가장 마지막으로 종료됩니다.</p>
+</blockquote>
+
+<h2 id="liveness와-readiness-probe-분리">Liveness와 Readiness Probe 분리</h2>
+
+<p>이 두 가지를 동일하게 설정하는 실수를 자주 봅니다.</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">livenessProbe</span><span class="pi">:</span>
+  <span class="na">httpGet</span><span class="pi">:</span>
+    <span class="na">path</span><span class="pi">:</span> <span class="s">/health</span>
+    <span class="na">port</span><span class="pi">:</span> <span class="m">8080</span>
+  <span class="na">initialDelaySeconds</span><span class="pi">:</span> <span class="m">30</span>
+  <span class="na">periodSeconds</span><span class="pi">:</span> <span class="m">10</span>
+  <span class="na">failureThreshold</span><span class="pi">:</span> <span class="m">3</span>
+
+<span class="na">readinessProbe</span><span class="pi">:</span>
+  <span class="na">httpGet</span><span class="pi">:</span>
+    <span class="na">path</span><span class="pi">:</span> <span class="s">/ready</span>
+    <span class="na">port</span><span class="pi">:</span> <span class="m">8080</span>
+  <span class="na">initialDelaySeconds</span><span class="pi">:</span> <span class="m">5</span>
+  <span class="na">periodSeconds</span><span class="pi">:</span> <span class="m">5</span>
+  <span class="na">failureThreshold</span><span class="pi">:</span> <span class="m">2</span>
+</code></pre></div></div>
+
+<ul>
+  <li><strong>Liveness Probe</strong>: 애플리케이션이 데드락 등으로 응답 불가 상태인지 확인. 실패하면 파드 재시작.</li>
+  <li><strong>Readiness Probe</strong>: 트래픽을 받을 준비가 됐는지 확인. 실패하면 서비스 엔드포인트에서 제거.</li>
+</ul>
+
+<p>데이터베이스 초기화나 워밍업이 필요한 서비스는 readiness probe에 더 엄격한 기준을 적용하고, liveness probe는 단순히 프로세스가 살아있는지만 확인하도록 분리했습니다.</p>
+
+<h2 id="poddisruptionbudget-설정">PodDisruptionBudget 설정</h2>
+
+<p>노드 업그레이드나 클러스터 유지보수 시 서비스 중단을 방지하려면 필수입니다.</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">apiVersion</span><span class="pi">:</span> <span class="s">policy/v1</span>
+<span class="na">kind</span><span class="pi">:</span> <span class="s">PodDisruptionBudget</span>
+<span class="na">metadata</span><span class="pi">:</span>
+  <span class="na">name</span><span class="pi">:</span> <span class="s">api-pdb</span>
+<span class="na">spec</span><span class="pi">:</span>
+  <span class="na">minAvailable</span><span class="pi">:</span> <span class="m">2</span>
+  <span class="na">selector</span><span class="pi">:</span>
+    <span class="na">matchLabels</span><span class="pi">:</span>
+      <span class="na">app</span><span class="pi">:</span> <span class="s">api-server</span>
+</code></pre></div></div>
+
+<p>이 설정 없이 클러스터를 업그레이드했다가 모든 파드가 동시에 종료되어 서비스가 5분간 다운된 경험이 있습니다.</p>
+
+<h2 id="네임스페이스별-resourcequota">네임스페이스별 ResourceQuota</h2>
+
+<p>멀티 팀 환경에서 특정 팀이 클러스터 리소스를 독점하는 것을 방지합니다.</p>
+
+<div class="language-yaml highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="na">apiVersion</span><span class="pi">:</span> <span class="s">v1</span>
+<span class="na">kind</span><span class="pi">:</span> <span class="s">ResourceQuota</span>
+<span class="na">metadata</span><span class="pi">:</span>
+  <span class="na">name</span><span class="pi">:</span> <span class="s">team-quota</span>
+  <span class="na">namespace</span><span class="pi">:</span> <span class="s">team-a</span>
+<span class="na">spec</span><span class="pi">:</span>
+  <span class="na">hard</span><span class="pi">:</span>
+    <span class="na">requests.cpu</span><span class="pi">:</span> <span class="s2">"</span><span class="s">4"</span>
+    <span class="na">requests.memory</span><span class="pi">:</span> <span class="s">8Gi</span>
+    <span class="na">limits.cpu</span><span class="pi">:</span> <span class="s2">"</span><span class="s">8"</span>
+    <span class="na">limits.memory</span><span class="pi">:</span> <span class="s">16Gi</span>
+    <span class="na">count/pods</span><span class="pi">:</span> <span class="s2">"</span><span class="s">20"</span>
+</code></pre></div></div>
+
+<h2 id="모니터링과-알림">모니터링과 알림</h2>
+
+<p>Prometheus + Grafana 조합을 사용하고 있으며, 다음 메트릭을 핵심으로 모니터링합니다.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>메트릭</th>
+      <th>임계값</th>
+      <th>조치</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Pod Restart Count</td>
+      <td>5회/시간</td>
+      <td>즉시 알림</td>
+    </tr>
+    <tr>
+      <td>CPU Throttling</td>
+      <td>70% 이상</td>
+      <td>리소스 검토</td>
+    </tr>
+    <tr>
+      <td>Memory Working Set</td>
+      <td>limits의 80%</td>
+      <td>메모리 누수 확인</td>
+    </tr>
+    <tr>
+      <td>PVC 사용률</td>
+      <td>80% 이상</td>
+      <td>용량 확장</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="마무리">마무리</h2>
+
+<p>쿠버네티스 운영은 한 번에 완벽하게 설정하기 어렵습니다. 장애를 겪고, 배우고, 개선하는 과정이 반복됩니다. 다음 포스트에서는 Helm Chart 구조화와 GitOps 워크플로우에 대해 더 자세히 다루겠습니다.</p>]]></content><author><name>jiwon</name></author><category term="Kubernetes" /><category term="DevOps" /><category term="Cloud" /><summary type="html"><![CDATA[실제 프로덕션 환경에서 쿠버네티스를 안정적으로 운영하면서 얻은 교훈과 베스트 프랙티스를 공유합니다.]]></summary></entry><entry><title type="html">Go 마이크로서비스 성능 최적화 경험기</title><link href="https://nxtcloud-org.github.io/nxt-team-blog/posts/2026/02/18/go-microservices-performance/" rel="alternate" type="text/html" title="Go 마이크로서비스 성능 최적화 경험기" /><published>2026-02-18T00:00:00+00:00</published><updated>2026-02-18T00:00:00+00:00</updated><id>https://nxtcloud-org.github.io/nxt-team-blog/posts/2026/02/18/go-microservices-performance</id><content type="html" xml:base="https://nxtcloud-org.github.io/nxt-team-blog/posts/2026/02/18/go-microservices-performance/"><![CDATA[<p>NXT 팀의 핵심 API 서버는 Go로 작성되어 있습니다. 초기에는 하루 1,000만 요청 정도였지만, 지금은 피크 타임 기준 초당 50만 요청(500k RPS)을 처리합니다. 이 과정에서 경험한 성능 최적화 여정을 공유합니다.</p>
+
+<h2 id="syncpool로-할당-최소화">sync.Pool로 할당 최소화</h2>
+
+<p>Go의 GC는 훌륭하지만, 고성능 서비스에서는 할당(allocation) 자체를 줄이는 것이 중요합니다.</p>
+
+<div class="language-go highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">var</span> <span class="n">bufferPool</span> <span class="o">=</span> <span class="n">sync</span><span class="o">.</span><span class="n">Pool</span><span class="p">{</span>
+    <span class="n">New</span><span class="o">:</span> <span class="k">func</span><span class="p">()</span> <span class="k">interface</span><span class="p">{}</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="nb">make</span><span class="p">([]</span><span class="kt">byte</span><span class="p">,</span> <span class="m">0</span><span class="p">,</span> <span class="m">4096</span><span class="p">)</span>
+    <span class="p">},</span>
+<span class="p">}</span>
+
+<span class="k">func</span> <span class="n">processRequest</span><span class="p">(</span><span class="n">data</span> <span class="p">[]</span><span class="kt">byte</span><span class="p">)</span> <span class="p">[]</span><span class="kt">byte</span> <span class="p">{</span>
+    <span class="n">buf</span> <span class="o">:=</span> <span class="n">bufferPool</span><span class="o">.</span><span class="n">Get</span><span class="p">()</span><span class="o">.</span><span class="p">([]</span><span class="kt">byte</span><span class="p">)</span>
+    <span class="k">defer</span> <span class="k">func</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">buf</span> <span class="o">=</span> <span class="n">buf</span><span class="p">[</span><span class="o">:</span><span class="m">0</span><span class="p">]</span>
+        <span class="n">bufferPool</span><span class="o">.</span><span class="n">Put</span><span class="p">(</span><span class="n">buf</span><span class="p">)</span>
+    <span class="p">}()</span>
+
+    <span class="c">// buf를 사용한 처리</span>
+    <span class="n">buf</span> <span class="o">=</span> <span class="nb">append</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span> <span class="n">data</span><span class="o">...</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">processData</span><span class="p">(</span><span class="n">buf</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>이 변경만으로 GC pause time이 평균 8ms에서 0.5ms로 줄었습니다.</p>
+
+<h2 id="채널-대신-락-프리-자료구조">채널 대신 락-프리 자료구조</h2>
+
+<p>처음에는 채널로 작업자 풀을 구현했습니다.</p>
+
+<div class="language-go highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">// 이전 방식 - 채널 기반</span>
+<span class="n">jobs</span> <span class="o">:=</span> <span class="nb">make</span><span class="p">(</span><span class="k">chan</span> <span class="n">Job</span><span class="p">,</span> <span class="m">1000</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">i</span> <span class="o">:=</span> <span class="m">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">numWorkers</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span> <span class="p">{</span>
+    <span class="k">go</span> <span class="n">worker</span><span class="p">(</span><span class="n">jobs</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>하지만 채널 경합이 병목이 됐습니다. <code class="language-plaintext highlighter-rouge">ants</code> 라이브러리의 goroutine pool로 교체하니 처리량이 35% 향상됐습니다.</p>
+
+<div class="language-go highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="s">"github.com/panjf2000/ants/v2"</span>
+
+<span class="n">pool</span><span class="p">,</span> <span class="n">_</span> <span class="o">:=</span> <span class="n">ants</span><span class="o">.</span><span class="n">NewPoolWithFunc</span><span class="p">(</span><span class="n">numWorkers</span><span class="p">,</span> <span class="k">func</span><span class="p">(</span><span class="n">i</span> <span class="k">interface</span><span class="p">{})</span> <span class="p">{</span>
+    <span class="n">processJob</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="p">(</span><span class="n">Job</span><span class="p">))</span>
+<span class="p">})</span>
+<span class="k">defer</span> <span class="n">pool</span><span class="o">.</span><span class="n">Release</span><span class="p">()</span>
+
+<span class="n">pool</span><span class="o">.</span><span class="n">Invoke</span><span class="p">(</span><span class="n">job</span><span class="p">)</span>
+</code></pre></div></div>
+
+<h2 id="프로파일링으로-실제-병목-찾기">프로파일링으로 실제 병목 찾기</h2>
+
+<p>추측하지 말고 측정하세요. pprof는 Go에 내장된 강력한 도구입니다.</p>
+
+<div class="language-go highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="n">_</span> <span class="s">"net/http/pprof"</span>
+
+<span class="c">// 별도 포트에서 pprof 서버 실행</span>
+<span class="k">go</span> <span class="k">func</span><span class="p">()</span> <span class="p">{</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">Println</span><span class="p">(</span><span class="n">http</span><span class="o">.</span><span class="n">ListenAndServe</span><span class="p">(</span><span class="s">":6060"</span><span class="p">,</span> <span class="no">nil</span><span class="p">))</span>
+<span class="p">}()</span>
+</code></pre></div></div>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># CPU 프로파일 30초 수집</span>
+go tool pprof <span class="nt">-http</span><span class="o">=</span>:8081 http://localhost:6060/debug/pprof/profile?seconds<span class="o">=</span>30
+
+<span class="c"># 힙 메모리 분석</span>
+go tool pprof <span class="nt">-http</span><span class="o">=</span>:8081 http://localhost:6060/debug/pprof/heap
+</code></pre></div></div>
+
+<p>실제로 프로파일링해보니 예상치 못한 곳에서 병목이 발생했습니다. <code class="language-plaintext highlighter-rouge">json.Marshal</code>이 전체 CPU의 23%를 차지하고 있었고, <code class="language-plaintext highlighter-rouge">sonic</code> 라이브러리로 교체하니 JSON 처리 시간이 60% 줄었습니다.</p>
+
+<h2 id="구조체-필드-정렬">구조체 필드 정렬</h2>
+
+<p>작지만 놀라운 최적화입니다.</p>
+
+<div class="language-go highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">// 나쁜 예 - 패딩 낭비</span>
+<span class="k">type</span> <span class="n">Bad</span> <span class="k">struct</span> <span class="p">{</span>
+    <span class="n">A</span> <span class="kt">bool</span>    <span class="c">// 1 byte</span>
+    <span class="n">B</span> <span class="kt">int64</span>   <span class="c">// 8 bytes (7 bytes padding)</span>
+    <span class="n">C</span> <span class="kt">bool</span>    <span class="c">// 1 byte</span>
+    <span class="n">D</span> <span class="kt">int64</span>   <span class="c">// 8 bytes (7 bytes padding)</span>
+<span class="p">}</span> <span class="c">// 총 32 bytes</span>
+
+<span class="c">// 좋은 예 - 큰 필드 먼저</span>
+<span class="k">type</span> <span class="n">Good</span> <span class="k">struct</span> <span class="p">{</span>
+    <span class="n">B</span> <span class="kt">int64</span>   <span class="c">// 8 bytes</span>
+    <span class="n">D</span> <span class="kt">int64</span>   <span class="c">// 8 bytes</span>
+    <span class="n">A</span> <span class="kt">bool</span>    <span class="c">// 1 byte</span>
+    <span class="n">C</span> <span class="kt">bool</span>    <span class="c">// 1 byte</span>
+<span class="p">}</span> <span class="c">// 총 18 bytes (패딩 포함 24 bytes)</span>
+</code></pre></div></div>
+
+<p>수백만 개 객체를 처리하는 서비스에서 메모리 사용량이 15% 감소했습니다.</p>
+
+<h2 id="벤치마크로-검증">벤치마크로 검증</h2>
+
+<p>성능 개선 전후를 항상 벤치마크로 측정합니다.</p>
+
+<div class="language-go highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">func</span> <span class="n">BenchmarkProcessRequest</span><span class="p">(</span><span class="n">b</span> <span class="o">*</span><span class="n">testing</span><span class="o">.</span><span class="n">B</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">data</span> <span class="o">:=</span> <span class="n">generateTestData</span><span class="p">()</span>
+    <span class="n">b</span><span class="o">.</span><span class="n">ResetTimer</span><span class="p">()</span>
+    <span class="n">b</span><span class="o">.</span><span class="n">ReportAllocs</span><span class="p">()</span>
+
+    <span class="n">b</span><span class="o">.</span><span class="n">RunParallel</span><span class="p">(</span><span class="k">func</span><span class="p">(</span><span class="n">pb</span> <span class="o">*</span><span class="n">testing</span><span class="o">.</span><span class="n">PB</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">for</span> <span class="n">pb</span><span class="o">.</span><span class="n">Next</span><span class="p">()</span> <span class="p">{</span>
+            <span class="n">processRequest</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">})</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>go <span class="nb">test</span> <span class="nt">-bench</span><span class="o">=</span><span class="nb">.</span> <span class="nt">-benchtime</span><span class="o">=</span>10s <span class="nt">-count</span><span class="o">=</span>5 ./...
+</code></pre></div></div>
+
+<h2 id="결과">결과</h2>
+
+<p>이러한 최적화들을 적용한 결과:</p>
+<ul>
+  <li><strong>처리량</strong>: 150k RPS → 500k RPS (233% 향상)</li>
+  <li><strong>P99 지연</strong>: 45ms → 12ms</li>
+  <li><strong>메모리 사용</strong>: 8GB → 3.2GB</li>
+  <li><strong>GC Pause</strong>: 평균 8ms → 0.5ms</li>
+</ul>
+
+<p>성능 최적화는 한 번에 모든 것을 바꾸는 것이 아닙니다. 프로파일링으로 병목을 찾고, 하나씩 측정하며 개선하는 과정입니다.</p>]]></content><author><name>minjun</name></author><category term="Go" /><category term="Performance" /><category term="Microservices" /><summary type="html"><![CDATA[수백만 RPS를 처리하는 Go 마이크로서비스를 구축하면서 적용한 성능 최적화 기법들을 공유합니다.]]></summary></entry><entry><title type="html">LLM 서비스 프로덕션 배포: 비용과 성능의 균형</title><link href="https://nxtcloud-org.github.io/nxt-team-blog/posts/2026/02/10/llm-production-deployment/" rel="alternate" type="text/html" title="LLM 서비스 프로덕션 배포: 비용과 성능의 균형" /><published>2026-02-10T02:00:00+00:00</published><updated>2026-02-10T02:00:00+00:00</updated><id>https://nxtcloud-org.github.io/nxt-team-blog/posts/2026/02/10/llm-production-deployment</id><content type="html" xml:base="https://nxtcloud-org.github.io/nxt-team-blog/posts/2026/02/10/llm-production-deployment/"><![CDATA[<p>LLM 기반 서비스를 처음 론칭했을 때, 첫 달 API 비용이 예상의 10배가 나왔습니다. 이후 6개월간 비용을 92% 절감하면서 동시에 응답 속도도 40% 개선한 경험을 공유합니다.</p>
+
+<h2 id="문제-진단-어디서-돈이-새나">문제 진단: 어디서 돈이 새나</h2>
+
+<p>처음에는 모든 요청에 GPT-4를 사용했습니다. 사용자가 “안녕”이라고 입력해도 GPT-4가 응답했죠. 토큰 사용량을 분석해보니:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>요청 유형</th>
+      <th>비율</th>
+      <th>평균 토큰</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>단순 질의응답</td>
+      <td>65%</td>
+      <td>800 tokens</td>
+    </tr>
+    <tr>
+      <td>복잡한 추론</td>
+      <td>20%</td>
+      <td>3,200 tokens</td>
+    </tr>
+    <tr>
+      <td>코드 생성</td>
+      <td>15%</td>
+      <td>4,500 tokens</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>단순 질의응답이 전체의 65%인데 GPT-4를 쓰고 있었습니다.</p>
+
+<h2 id="솔루션-1-라우팅-레이어-도입">솔루션 1: 라우팅 레이어 도입</h2>
+
+<p>요청의 복잡도를 분류해 적절한 모델로 라우팅합니다.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="n">enum</span> <span class="kn">import</span> <span class="n">Enum</span>
+
+<span class="k">class</span> <span class="nc">Complexity</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+    <span class="n">SIMPLE</span> <span class="o">=</span> <span class="sh">"</span><span class="s">simple</span><span class="sh">"</span>
+    <span class="n">MEDIUM</span> <span class="o">=</span> <span class="sh">"</span><span class="s">medium</span><span class="sh">"</span>
+    <span class="n">COMPLEX</span> <span class="o">=</span> <span class="sh">"</span><span class="s">complex</span><span class="sh">"</span>
+
+<span class="k">class</span> <span class="nc">ModelRouter</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="n">self</span><span class="p">):</span>
+        <span class="n">self</span><span class="p">.</span><span class="n">models</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">Complexity</span><span class="p">.</span><span class="n">SIMPLE</span><span class="p">:</span> <span class="sh">"</span><span class="s">gpt-3.5-turbo</span><span class="sh">"</span><span class="p">,</span>
+            <span class="n">Complexity</span><span class="p">.</span><span class="n">MEDIUM</span><span class="p">:</span> <span class="sh">"</span><span class="s">gpt-4o-mini</span><span class="sh">"</span><span class="p">,</span>
+            <span class="n">Complexity</span><span class="p">.</span><span class="n">COMPLEX</span><span class="p">:</span> <span class="sh">"</span><span class="s">gpt-4o</span><span class="sh">"</span><span class="p">,</span>
+        <span class="p">}</span>
+
+    <span class="k">def</span> <span class="nf">classify</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Complexity</span><span class="p">:</span>
+        <span class="c1"># 간단한 휴리스틱으로 분류
+</span>        <span class="n">tokens</span> <span class="o">=</span> <span class="nf">len</span><span class="p">(</span><span class="n">query</span><span class="p">.</span><span class="nf">split</span><span class="p">())</span>
+
+        <span class="k">if</span> <span class="n">tokens</span> <span class="o">&lt;</span> <span class="mi">20</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">context</span><span class="p">.</span><span class="nf">get</span><span class="p">(</span><span class="sh">"</span><span class="s">requires_reasoning</span><span class="sh">"</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">Complexity</span><span class="p">.</span><span class="n">SIMPLE</span>
+        <span class="k">elif</span> <span class="n">tokens</span> <span class="o">&lt;</span> <span class="mi">100</span> <span class="ow">or</span> <span class="n">context</span><span class="p">.</span><span class="nf">get</span><span class="p">(</span><span class="sh">"</span><span class="s">is_code_task</span><span class="sh">"</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">Complexity</span><span class="p">.</span><span class="n">MEDIUM</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">Complexity</span><span class="p">.</span><span class="n">COMPLEX</span>
+
+    <span class="k">def</span> <span class="nf">get_model</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">context</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">complexity</span> <span class="o">=</span> <span class="n">self</span><span class="p">.</span><span class="nf">classify</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">context</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">self</span><span class="p">.</span><span class="n">models</span><span class="p">[</span><span class="n">complexity</span><span class="p">]</span>
+</code></pre></div></div>
+
+<p>이것만으로 비용의 60%가 절감됐습니다.</p>
+
+<h2 id="솔루션-2-시맨틱-캐싱">솔루션 2: 시맨틱 캐싱</h2>
+
+<p>동일하거나 유사한 질문에 대해 캐시된 응답을 반환합니다.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="n">numpy</span> <span class="k">as</span> <span class="n">np</span>
+<span class="kn">from</span> <span class="n">redis</span> <span class="kn">import</span> <span class="n">Redis</span>
+<span class="kn">import</span> <span class="n">pickle</span>
+
+<span class="k">class</span> <span class="nc">SemanticCache</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">redis_client</span><span class="p">:</span> <span class="n">Redis</span><span class="p">,</span> <span class="n">threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.92</span><span class="p">):</span>
+        <span class="n">self</span><span class="p">.</span><span class="n">redis</span> <span class="o">=</span> <span class="n">redis_client</span>
+        <span class="n">self</span><span class="p">.</span><span class="n">threshold</span> <span class="o">=</span> <span class="n">threshold</span>
+        <span class="n">self</span><span class="p">.</span><span class="n">embedder</span> <span class="o">=</span> <span class="nf">load_embedding_model</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="bp">None</span><span class="p">:</span>
+        <span class="n">query_embedding</span> <span class="o">=</span> <span class="n">self</span><span class="p">.</span><span class="n">embedder</span><span class="p">.</span><span class="nf">encode</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+
+        <span class="c1"># 저장된 모든 임베딩과 코사인 유사도 계산
+</span>        <span class="n">cached_keys</span> <span class="o">=</span> <span class="n">self</span><span class="p">.</span><span class="n">redis</span><span class="p">.</span><span class="nf">keys</span><span class="p">(</span><span class="sh">"</span><span class="s">cache:embed:*</span><span class="sh">"</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">cached_keys</span><span class="p">:</span>
+            <span class="n">cached_embed</span> <span class="o">=</span> <span class="n">pickle</span><span class="p">.</span><span class="nf">loads</span><span class="p">(</span><span class="n">self</span><span class="p">.</span><span class="n">redis</span><span class="p">.</span><span class="nf">get</span><span class="p">(</span><span class="n">key</span><span class="p">))</span>
+            <span class="n">similarity</span> <span class="o">=</span> <span class="n">self</span><span class="p">.</span><span class="nf">_cosine_sim</span><span class="p">(</span><span class="n">query_embedding</span><span class="p">,</span> <span class="n">cached_embed</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">similarity</span> <span class="o">&gt;=</span> <span class="n">self</span><span class="p">.</span><span class="n">threshold</span><span class="p">:</span>
+                <span class="n">response_key</span> <span class="o">=</span> <span class="n">key</span><span class="p">.</span><span class="nf">replace</span><span class="p">(</span><span class="sa">b</span><span class="sh">"</span><span class="s">embed:</span><span class="sh">"</span><span class="p">,</span> <span class="sa">b</span><span class="sh">"</span><span class="s">resp:</span><span class="sh">"</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">self</span><span class="p">.</span><span class="n">redis</span><span class="p">.</span><span class="nf">get</span><span class="p">(</span><span class="n">response_key</span><span class="p">).</span><span class="nf">decode</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="bp">None</span>
+
+    <span class="k">def</span> <span class="nf">set</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">response</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">ttl</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3600</span><span class="p">):</span>
+        <span class="n">cache_id</span> <span class="o">=</span> <span class="nf">generate_id</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+        <span class="n">embedding</span> <span class="o">=</span> <span class="n">self</span><span class="p">.</span><span class="n">embedder</span><span class="p">.</span><span class="nf">encode</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+
+        <span class="n">self</span><span class="p">.</span><span class="n">redis</span><span class="p">.</span><span class="nf">setex</span><span class="p">(</span><span class="sa">f</span><span class="sh">"</span><span class="s">cache:embed:</span><span class="si">{</span><span class="n">cache_id</span><span class="si">}</span><span class="sh">"</span><span class="p">,</span> <span class="n">ttl</span><span class="p">,</span> <span class="n">pickle</span><span class="p">.</span><span class="nf">dumps</span><span class="p">(</span><span class="n">embedding</span><span class="p">))</span>
+        <span class="n">self</span><span class="p">.</span><span class="n">redis</span><span class="p">.</span><span class="nf">setex</span><span class="p">(</span><span class="sa">f</span><span class="sh">"</span><span class="s">cache:resp:</span><span class="si">{</span><span class="n">cache_id</span><span class="si">}</span><span class="sh">"</span><span class="p">,</span> <span class="n">ttl</span><span class="p">,</span> <span class="n">response</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_cosine_sim</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">np</span><span class="p">.</span><span class="nf">dot</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="n">linalg</span><span class="p">.</span><span class="nf">norm</span><span class="p">(</span><span class="n">a</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="p">.</span><span class="n">linalg</span><span class="p">.</span><span class="nf">norm</span><span class="p">(</span><span class="n">b</span><span class="p">))</span>
+</code></pre></div></div>
+
+<p>캐시 히트율이 안정화된 이후 32%로, 추가로 32%의 비용이 절감됐습니다.</p>
+
+<h2 id="솔루션-3-스트리밍과-청크-처리">솔루션 3: 스트리밍과 청크 처리</h2>
+
+<p>긴 응답을 기다리는 동안 사용자는 이탈합니다. 스트리밍으로 첫 토큰 도달 시간(TTFT)을 줄입니다.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">async</span> <span class="k">def</span> <span class="nf">stream_response</span><span class="p">(</span><span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="k">async</span> <span class="k">with</span> <span class="n">aiohttp</span><span class="p">.</span><span class="nc">ClientSession</span><span class="p">()</span> <span class="k">as</span> <span class="n">session</span><span class="p">:</span>
+        <span class="k">async</span> <span class="k">with</span> <span class="n">session</span><span class="p">.</span><span class="nf">post</span><span class="p">(</span>
+            <span class="sh">"</span><span class="s">https://api.openai.com/v1/chat/completions</span><span class="sh">"</span><span class="p">,</span>
+            <span class="n">json</span><span class="o">=</span><span class="p">{</span>
+                <span class="sh">"</span><span class="s">model</span><span class="sh">"</span><span class="p">:</span> <span class="sh">"</span><span class="s">gpt-4o</span><span class="sh">"</span><span class="p">,</span>
+                <span class="sh">"</span><span class="s">messages</span><span class="sh">"</span><span class="p">:</span> <span class="p">[{</span><span class="sh">"</span><span class="s">role</span><span class="sh">"</span><span class="p">:</span> <span class="sh">"</span><span class="s">user</span><span class="sh">"</span><span class="p">,</span> <span class="sh">"</span><span class="s">content</span><span class="sh">"</span><span class="p">:</span> <span class="n">query</span><span class="p">}],</span>
+                <span class="sh">"</span><span class="s">stream</span><span class="sh">"</span><span class="p">:</span> <span class="bp">True</span><span class="p">,</span>
+            <span class="p">},</span>
+            <span class="n">headers</span><span class="o">=</span><span class="p">{</span><span class="sh">"</span><span class="s">Authorization</span><span class="sh">"</span><span class="p">:</span> <span class="sa">f</span><span class="sh">"</span><span class="s">Bearer </span><span class="si">{</span><span class="n">API_KEY</span><span class="si">}</span><span class="sh">"</span><span class="p">},</span>
+        <span class="p">)</span> <span class="k">as</span> <span class="n">response</span><span class="p">:</span>
+            <span class="k">async</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">response</span><span class="p">.</span><span class="n">content</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">line</span><span class="p">.</span><span class="nf">startswith</span><span class="p">(</span><span class="sa">b</span><span class="sh">"</span><span class="s">data: </span><span class="sh">"</span><span class="p">):</span>
+                    <span class="n">data</span> <span class="o">=</span> <span class="n">line</span><span class="p">[</span><span class="mi">6</span><span class="p">:].</span><span class="nf">decode</span><span class="p">().</span><span class="nf">strip</span><span class="p">()</span>
+                    <span class="k">if</span> <span class="n">data</span> <span class="o">==</span> <span class="sh">"</span><span class="s">[DONE]</span><span class="sh">"</span><span class="p">:</span>
+                        <span class="k">break</span>
+                    <span class="n">chunk</span> <span class="o">=</span> <span class="n">json</span><span class="p">.</span><span class="nf">loads</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">content</span> <span class="p">:</span><span class="o">=</span> <span class="n">chunk</span><span class="p">[</span><span class="sh">"</span><span class="s">choices</span><span class="sh">"</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="sh">"</span><span class="s">delta</span><span class="sh">"</span><span class="p">].</span><span class="nf">get</span><span class="p">(</span><span class="sh">"</span><span class="s">content</span><span class="sh">"</span><span class="p">):</span>
+                        <span class="k">yield</span> <span class="n">content</span>
+</code></pre></div></div>
+
+<p>TTFT가 3.2초에서 0.4초로 줄어 사용자 이탈률이 45% 감소했습니다.</p>
+
+<h2 id="결과-정리">결과 정리</h2>
+
+<p>6개월간의 최적화 결과:</p>
+
+<ul>
+  <li><strong>월 비용</strong>: $48,000 → $3,840 (92% 절감)</li>
+  <li><strong>평균 응답 시간</strong>: 4.1초 → 2.4초</li>
+  <li><strong>TTFT</strong>: 3.2초 → 0.4초</li>
+  <li><strong>사용자 만족도</strong>: 3.4점 → 4.2점 (5점 만점)</li>
+</ul>
+
+<p>비용 절감이 오히려 성능 향상으로 이어진 경우입니다. 복잡도에 맞는 모델을 사용하니 더 빠른 응답이 가능했고, 캐싱으로 반복 질문에 즉시 응답하게 됐습니다.</p>
+
+<p>다음 포스트에서는 LLM 응답 품질 평가 시스템 구축에 대해 다루겠습니다.</p>]]></content><author><name>soyeon</name></author><category term="AI" /><category term="LLM" /><category term="MLOps" /><summary type="html"><![CDATA[GPT-4 수준의 LLM 서비스를 프로덕션에 배포하면서 겪은 비용 폭탄과 성능 이슈를 어떻게 해결했는지 공유합니다.]]></summary></entry><entry><title type="html">React 앱 성능 최적화: Core Web Vitals 개선기</title><link href="https://nxtcloud-org.github.io/nxt-team-blog/posts/2026/01/28/react-performance-optimization/" rel="alternate" type="text/html" title="React 앱 성능 최적화: Core Web Vitals 개선기" /><published>2026-01-28T01:00:00+00:00</published><updated>2026-01-28T01:00:00+00:00</updated><id>https://nxtcloud-org.github.io/nxt-team-blog/posts/2026/01/28/react-performance-optimization</id><content type="html" xml:base="https://nxtcloud-org.github.io/nxt-team-blog/posts/2026/01/28/react-performance-optimization/"><![CDATA[<p>지난 분기에 NXT 팀 메인 대시보드의 Core Web Vitals를 개선하는 작업을 진행했습니다. 처음 측정 결과는 참담했습니다.</p>
+
+<ul>
+  <li><strong>LCP</strong>: 4.2초 (기준: 2.5초 이하)</li>
+  <li><strong>FID</strong>: 380ms (기준: 100ms 이하)</li>
+  <li><strong>CLS</strong>: 0.31 (기준: 0.1 이하)</li>
+</ul>
+
+<h2 id="번들-크기-분석부터">번들 크기 분석부터</h2>
+
+<p>먼저 무엇이 번들을 크게 만드는지 파악했습니다.</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c"># webpack-bundle-analyzer 설치</span>
+npm <span class="nb">install</span> <span class="nt">--save-dev</span> webpack-bundle-analyzer
+
+<span class="c"># 분석 실행</span>
+npx webpack-bundle-analyzer build/static/js/<span class="k">*</span>.js
+</code></pre></div></div>
+
+<p>충격적이었습니다. moment.js가 전체 번들의 23%를 차지하고 있었습니다. 한국어 날짜 포맷팅을 위해 추가했는데, 모든 로케일 파일이 포함돼 있었습니다.</p>
+
+<div class="language-javascript highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// 이전: moment.js (67KB gzipped)</span>
+<span class="k">import</span> <span class="nx">moment</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">moment</span><span class="dl">'</span><span class="p">;</span>
+<span class="kd">const</span> <span class="nx">formatted</span> <span class="o">=</span> <span class="nf">moment</span><span class="p">(</span><span class="nx">date</span><span class="p">).</span><span class="nf">format</span><span class="p">(</span><span class="dl">'</span><span class="s1">YYYY년 MM월 DD일</span><span class="dl">'</span><span class="p">);</span>
+
+<span class="c1">// 이후: date-fns (트리쉐이킹 지원, 2KB)</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">format</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">date-fns</span><span class="dl">'</span><span class="p">;</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">ko</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">date-fns/locale</span><span class="dl">'</span><span class="p">;</span>
+<span class="kd">const</span> <span class="nx">formatted</span> <span class="o">=</span> <span class="nf">format</span><span class="p">(</span><span class="nx">date</span><span class="p">,</span> <span class="dl">'</span><span class="s1">yyyy년 MM월 dd일</span><span class="dl">'</span><span class="p">,</span> <span class="p">{</span> <span class="na">locale</span><span class="p">:</span> <span class="nx">ko</span> <span class="p">});</span>
+</code></pre></div></div>
+
+<p>번들 크기가 340KB에서 180KB로 줄었습니다.</p>
+
+<h2 id="코드-스플리팅">코드 스플리팅</h2>
+
+<p>모든 라우트를 한 번에 로드하지 않아도 됩니다.</p>
+
+<div class="language-jsx highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="p">{</span> <span class="nx">lazy</span><span class="p">,</span> <span class="nx">Suspense</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">react</span><span class="dl">'</span><span class="p">;</span>
+<span class="k">import</span> <span class="p">{</span> <span class="nx">Routes</span><span class="p">,</span> <span class="nx">Route</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">react-router-dom</span><span class="dl">'</span><span class="p">;</span>
+
+<span class="kd">const</span> <span class="nx">Dashboard</span> <span class="o">=</span> <span class="nf">lazy</span><span class="p">(()</span> <span class="o">=&gt;</span> <span class="k">import</span><span class="p">(</span><span class="dl">'</span><span class="s1">./pages/Dashboard</span><span class="dl">'</span><span class="p">));</span>
+<span class="kd">const</span> <span class="nx">Analytics</span> <span class="o">=</span> <span class="nf">lazy</span><span class="p">(()</span> <span class="o">=&gt;</span> <span class="k">import</span><span class="p">(</span><span class="dl">'</span><span class="s1">./pages/Analytics</span><span class="dl">'</span><span class="p">));</span>
+<span class="kd">const</span> <span class="nx">Settings</span> <span class="o">=</span> <span class="nf">lazy</span><span class="p">(()</span> <span class="o">=&gt;</span> <span class="k">import</span><span class="p">(</span><span class="dl">'</span><span class="s1">./pages/Settings</span><span class="dl">'</span><span class="p">));</span>
+
+<span class="kd">function</span> <span class="nf">App</span><span class="p">()</span> <span class="p">{</span>
+  <span class="k">return </span><span class="p">(</span>
+    <span class="p">&lt;</span><span class="nc">Suspense</span> <span class="na">fallback</span><span class="p">=</span><span class="si">{</span><span class="p">&lt;</span><span class="nc">PageLoader</span> <span class="p">/&gt;</span><span class="si">}</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nc">Routes</span><span class="p">&gt;</span>
+        <span class="p">&lt;</span><span class="nc">Route</span> <span class="na">path</span><span class="p">=</span><span class="s">"/"</span> <span class="na">element</span><span class="p">=</span><span class="si">{</span><span class="p">&lt;</span><span class="nc">Dashboard</span> <span class="p">/&gt;</span><span class="si">}</span> <span class="p">/&gt;</span>
+        <span class="p">&lt;</span><span class="nc">Route</span> <span class="na">path</span><span class="p">=</span><span class="s">"/analytics"</span> <span class="na">element</span><span class="p">=</span><span class="si">{</span><span class="p">&lt;</span><span class="nc">Analytics</span> <span class="p">/&gt;</span><span class="si">}</span> <span class="p">/&gt;</span>
+        <span class="p">&lt;</span><span class="nc">Route</span> <span class="na">path</span><span class="p">=</span><span class="s">"/settings"</span> <span class="na">element</span><span class="p">=</span><span class="si">{</span><span class="p">&lt;</span><span class="nc">Settings</span> <span class="p">/&gt;</span><span class="si">}</span> <span class="p">/&gt;</span>
+      <span class="p">&lt;/</span><span class="nc">Routes</span><span class="p">&gt;</span>
+    <span class="p">&lt;/</span><span class="nc">Suspense</span><span class="p">&gt;</span>
+  <span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>초기 번들이 180KB에서 72KB로 줄었고, LCP가 4.2초 → 2.1초로 개선됐습니다.</p>
+
+<h2 id="이미지-최적화">이미지 최적화</h2>
+
+<p>프로파일링 도구로 보니 대용량 PNG 이미지들이 LCP에 큰 영향을 미치고 있었습니다.</p>
+
+<div class="language-jsx highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// 반응형 이미지 + WebP 지원</span>
+<span class="kd">function</span> <span class="nf">OptimizedImage</span><span class="p">({</span> <span class="nx">src</span><span class="p">,</span> <span class="nx">alt</span><span class="p">,</span> <span class="nx">width</span><span class="p">,</span> <span class="nx">height</span> <span class="p">})</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="nx">webpSrc</span> <span class="o">=</span> <span class="nx">src</span><span class="p">.</span><span class="nf">replace</span><span class="p">(</span><span class="sr">/</span><span class="se">\.(</span><span class="sr">png|jpg</span><span class="se">)</span><span class="sr">$/</span><span class="p">,</span> <span class="dl">'</span><span class="s1">.webp</span><span class="dl">'</span><span class="p">);</span>
+
+  <span class="k">return </span><span class="p">(</span>
+    <span class="p">&lt;</span><span class="nt">picture</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nt">source</span> <span class="na">srcSet</span><span class="p">=</span><span class="si">{</span><span class="nx">webpSrc</span><span class="si">}</span> <span class="na">type</span><span class="p">=</span><span class="s">"image/webp"</span> <span class="p">/&gt;</span>
+      <span class="p">&lt;</span><span class="nt">img</span>
+        <span class="na">src</span><span class="p">=</span><span class="si">{</span><span class="nx">src</span><span class="si">}</span>
+        <span class="na">alt</span><span class="p">=</span><span class="si">{</span><span class="nx">alt</span><span class="si">}</span>
+        <span class="na">width</span><span class="p">=</span><span class="si">{</span><span class="nx">width</span><span class="si">}</span>
+        <span class="na">height</span><span class="p">=</span><span class="si">{</span><span class="nx">height</span><span class="si">}</span>
+        <span class="na">loading</span><span class="p">=</span><span class="s">"lazy"</span>
+        <span class="na">decoding</span><span class="p">=</span><span class="s">"async"</span>
+        <span class="na">style</span><span class="p">=</span><span class="si">{</span><span class="p">{</span> <span class="na">aspectRatio</span><span class="p">:</span> <span class="s2">`</span><span class="p">${</span><span class="nx">width</span><span class="p">}</span><span class="s2">/</span><span class="p">${</span><span class="nx">height</span><span class="p">}</span><span class="s2">`</span> <span class="p">}</span><span class="si">}</span>
+      <span class="p">/&gt;</span>
+    <span class="p">&lt;/</span><span class="nt">picture</span><span class="p">&gt;</span>
+  <span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p><code class="language-plaintext highlighter-rouge">aspectRatio</code> 설정이 CLS를 크게 개선했습니다. 이미지가 로드되기 전에 공간을 미리 확보하기 때문입니다.</p>
+
+<h2 id="usememo와-usecallback의-올바른-사용">useMemo와 useCallback의 올바른 사용</h2>
+
+<p>이 훅들을 모든 곳에 남발하면 오히려 성능이 나빠집니다.</p>
+
+<div class="language-jsx highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">// ❌ 잘못된 사용 - 단순한 연산에 useMemo는 오버헤드</span>
+<span class="kd">const</span> <span class="nx">doubled</span> <span class="o">=</span> <span class="nf">useMemo</span><span class="p">(()</span> <span class="o">=&gt;</span> <span class="nx">value</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="p">[</span><span class="nx">value</span><span class="p">]);</span>
+
+<span class="c1">// ✅ 올바른 사용 - 무거운 연산에만</span>
+<span class="kd">const</span> <span class="nx">processedData</span> <span class="o">=</span> <span class="nf">useMemo</span><span class="p">(()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="nf">heavyDataProcessing</span><span class="p">(</span><span class="nx">rawData</span><span class="p">);</span> <span class="c1">// 수만 개 항목 처리</span>
+<span class="p">},</span> <span class="p">[</span><span class="nx">rawData</span><span class="p">]);</span>
+
+<span class="c1">// ✅ 자식 컴포넌트에 전달하는 함수</span>
+<span class="kd">const</span> <span class="nx">handleSubmit</span> <span class="o">=</span> <span class="nf">useCallback</span><span class="p">((</span><span class="nx">data</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+  <span class="nf">onSubmit</span><span class="p">(</span><span class="nx">data</span><span class="p">);</span>
+<span class="p">},</span> <span class="p">[</span><span class="nx">onSubmit</span><span class="p">]);</span>
+</code></pre></div></div>
+
+<p>React DevTools Profiler로 실제로 불필요한 리렌더링이 발생하는 컴포넌트를 찾아 최적화했습니다.</p>
+
+<h2 id="가상화로-긴-목록-처리">가상화로 긴 목록 처리</h2>
+
+<p>1만 개 항목을 렌더링하면 당연히 느립니다.</p>
+
+<div class="language-jsx highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">import</span> <span class="p">{</span> <span class="nx">FixedSizeList</span> <span class="p">}</span> <span class="k">from</span> <span class="dl">'</span><span class="s1">react-window</span><span class="dl">'</span><span class="p">;</span>
+
+<span class="kd">function</span> <span class="nf">VirtualizedList</span><span class="p">({</span> <span class="nx">items</span> <span class="p">})</span> <span class="p">{</span>
+  <span class="kd">const</span> <span class="nx">Row</span> <span class="o">=</span> <span class="p">({</span> <span class="nx">index</span><span class="p">,</span> <span class="nx">style</span> <span class="p">})</span> <span class="o">=&gt;</span> <span class="p">(</span>
+    <span class="p">&lt;</span><span class="nt">div</span> <span class="na">style</span><span class="p">=</span><span class="si">{</span><span class="nx">style</span><span class="si">}</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="nc">ListItem</span> <span class="na">data</span><span class="p">=</span><span class="si">{</span><span class="nx">items</span><span class="p">[</span><span class="nx">index</span><span class="p">]</span><span class="si">}</span> <span class="p">/&gt;</span>
+    <span class="p">&lt;/</span><span class="nt">div</span><span class="p">&gt;</span>
+  <span class="p">);</span>
+
+  <span class="k">return </span><span class="p">(</span>
+    <span class="p">&lt;</span><span class="nc">FixedSizeList</span>
+      <span class="na">height</span><span class="p">=</span><span class="si">{</span><span class="mi">600</span><span class="si">}</span>
+      <span class="na">itemCount</span><span class="p">=</span><span class="si">{</span><span class="nx">items</span><span class="p">.</span><span class="nx">length</span><span class="si">}</span>
+      <span class="na">itemSize</span><span class="p">=</span><span class="si">{</span><span class="mi">72</span><span class="si">}</span>
+      <span class="na">width</span><span class="p">=</span><span class="s">"100%"</span>
+    <span class="p">&gt;</span>
+      <span class="si">{</span><span class="nx">Row</span><span class="si">}</span>
+    <span class="p">&lt;/</span><span class="nc">FixedSizeList</span><span class="p">&gt;</span>
+  <span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>10,000개 항목 렌더링 시간이 2.3초에서 16ms로 줄었습니다.</p>
+
+<h2 id="최종-결과">최종 결과</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>메트릭</th>
+      <th>이전</th>
+      <th>이후</th>
+      <th>기준</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>LCP</td>
+      <td>4.2초</td>
+      <td>1.1초</td>
+      <td>✅ 2.5초</td>
+    </tr>
+    <tr>
+      <td>FID</td>
+      <td>380ms</td>
+      <td>45ms</td>
+      <td>✅ 100ms</td>
+    </tr>
+    <tr>
+      <td>CLS</td>
+      <td>0.31</td>
+      <td>0.02</td>
+      <td>✅ 0.1</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Lighthouse 점수가 42점에서 96점으로 올라갔고, 사용자 이탈률이 18% 감소했습니다.</p>
+
+<p>성능 최적화의 핵심은 <strong>측정 → 분석 → 개선 → 재측정</strong> 사이클입니다. 추측하지 말고 데이터로 판단하세요.</p>]]></content><author><name>hyunwoo</name></author><category term="React" /><category term="Performance" /><category term="Frontend" /><summary type="html"><![CDATA[LCP 4.2초에서 1.1초로, CLS 0.3에서 0.02로 개선한 실전 React 성능 최적화 경험을 공유합니다.]]></summary></entry></feed>
