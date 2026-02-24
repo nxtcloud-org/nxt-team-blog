@@ -71,6 +71,7 @@ function App() {
 
 프로파일링 도구로 보니 대용량 PNG 이미지들이 LCP에 큰 영향을 미치고 있었습니다.
 
+{% raw %}
 ```jsx
 // 반응형 이미지 + WebP 지원
 function OptimizedImage({ src, alt, width, height }) {
@@ -92,6 +93,7 @@ function OptimizedImage({ src, alt, width, height }) {
   );
 }
 ```
+{% endraw %}
 
 `aspectRatio` 설정이 CLS를 크게 개선했습니다. 이미지가 로드되기 전에 공간을 미리 확보하기 때문입니다.
 
