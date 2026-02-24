@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="ko" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NXT Blog — 글쓰기</title>
+  <link rel="icon" type="image/svg+xml" href="../assets/images/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/easymde/dist/easymde.min.css" />
+<style>
+/* ── Variables ─────────────────────────────────────── */
+:root {
+  --bg: #ffffff;
+  --bg2: #f8f9fc;
+  --bg3: #f0f1f8;
+  --card: #ffffff;
+  --border: #e5e7eb;
+  --text: #111827;
+  --muted: #6b7280;
+  --light: #9ca3af;
+  --accent: #6366f1;
+  --accent-light: #818cf8;
+  --accent-bg: #eff0ff;
+  --success: #10b981;
+  --success-bg: #ecfdf5;
+  --error: #ef4444;
+  --error-bg: #fef2f2;
+  --warn: #f59e0b;
+  --warn-bg: #fffbeb;
+  --radius: 10px;
+  --shadow: 0 2px 12px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.12);
+  --font: 'Inter', 'Noto Sans KR', sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+  --sidebar: 320px;
+  --header: 56px;
+}
+[data-theme="dark"] {
+  --bg: #0f1117; --bg2: #1a1d27; --bg3: #1e2235;
+  --card: #1e2130; --border: #2d3148;
+  --text: #e8eaf6; --muted: #9094b0; --light: #6b6f8a;
+  --accent: #818cf8; --accent-light: #a5b4fc; --accent-bg: #1e2040;
+  --success: #34d399; --success-bg: #0d2e22;
+  --error: #f87171; --error-bg: #2d1515;
+  --warn: #fbbf24; --warn-bg: #2d2010;
+  --shadow: 0 2px 12px rgba(0,0,0,0.3); --shadow-lg: 0 8px 32px rgba(0,0,0,0.5);
+}
+
+/* ── Reset ──────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+body { font-family: var(--font); background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.6; transition: background .2s, color .2s; }
+input, textarea, select, button { font-family: inherit; font-size: inherit; }
+a { color: var(--accent); text-decoration: none; }
+button { cursor: pointer; border: none; background: none; }
+
+/* ── Layout ─────────────────────────────────────────── */
+#app { display: flex; flex-direction: column; height: 100vh; }
+
+/* ── Topbar ─────────────────────────────────────────── */
+.topbar {
+  height: var(--header); min-height: var(--header);
+  display: flex; align-items: center; gap: 16px;
+  padding: 0 20px;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  z-index: 50;
+}
+.topbar-logo { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 1rem; color: var(--text); }
+.topbar-logo svg rect { fill: var(--accent); }
+.topbar-sep { width: 1px; height: 20px; background: var(--border); }
+.topbar-title { font-size: 0.88rem; color: var(--muted); }
+.topbar-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+
+/* ── Buttons ─────────────────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 16px; border-radius: 7px;
+  font-size: 0.84rem; font-weight: 600;
+  transition: all .15s; cursor: pointer; border: 1.5px solid transparent;
+}
+.btn-primary { background: var(--accent); color: white; }
+.btn-primary:hover { background: #4f46e5; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(99,102,241,.4); }
+.btn-primary:disabled { opacity: .5; cursor: not-allowed; transform: none; box-shadow: none; }
+.btn-outline { border-color: var(--border); color: var(--muted); background: transparent; }
+.btn-outline:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
+.btn-ghost { color: var(--muted); background: var(--bg2); padding: 7px 12px; }
+.btn-ghost:hover { color: var(--text); background: var(--bg3); }
+.btn-sm { padding: 5px 12px; font-size: 0.8rem; }
+.btn-icon { width: 34px; height: 34px; padding: 0; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+
+/* ── Main area ──────────────────────────────────────── */
+.workspace {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ── Sidebar ─────────────────────────────────────────── */
+.sidebar {
+  width: var(--sidebar); min-width: var(--sidebar);
+  background: var(--card);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+.sidebar-tabs { display: flex; border-bottom: 1px solid var(--border); }
+.sidebar-tab {
+  flex: 1; padding: 12px; font-size: 0.82rem; font-weight: 600;
+  color: var(--muted); background: none; border: none; cursor: pointer;
+  border-bottom: 2px solid transparent; transition: all .15s;
+}
+.sidebar-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.sidebar-tab:hover:not(.active) { color: var(--text); background: var(--bg2); }
+.sidebar-body { flex: 1; overflow-y: auto; padding: 20px; }
+.sidebar-body::-webkit-scrollbar { width: 4px; }
+.sidebar-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+/* ── Form elements ──────────────────────────────────── */
+.field { margin-bottom: 18px; }
+.label {
+  display: block; font-size: 0.78rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .05em;
+  color: var(--muted); margin-bottom: 6px;
+}
+.label span { color: var(--error); margin-left: 2px; }
+.input, .select, .textarea {
+  width: 100%; padding: 9px 12px;
+  background: var(--bg2); border: 1.5px solid var(--border);
+  border-radius: 8px; color: var(--text);
+  transition: border-color .15s, box-shadow .15s;
+  outline: none;
+}
+.input:focus, .select:focus, .textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(99,102,241,.15);
+  background: var(--bg);
+}
+.input::placeholder, .textarea::placeholder { color: var(--light); }
+.select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 32px; }
+.textarea { resize: vertical; min-height: 80px; font-size: 0.88rem; }
+.hint { font-size: 0.76rem; color: var(--light); margin-top: 4px; }
+
+/* Tags input */
+.tags-input-wrap { display: flex; flex-wrap: wrap; gap: 5px; padding: 7px 10px; background: var(--bg2); border: 1.5px solid var(--border); border-radius: 8px; cursor: text; transition: border-color .15s; }
+.tags-input-wrap:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(99,102,241,.15); background: var(--bg); }
+.tag-pill { display: flex; align-items: center; gap: 4px; padding: 2px 8px; background: var(--accent-bg); color: var(--accent); border-radius: 99px; font-size: 0.78rem; font-weight: 600; }
+.tag-pill button { color: var(--accent); opacity: .6; font-size: 0.9rem; line-height: 1; padding: 0 1px; }
+.tag-pill button:hover { opacity: 1; }
+.tags-bare-input { border: none; background: none; outline: none; color: var(--text); font-size: 0.84rem; min-width: 80px; flex: 1; padding: 2px 0; }
+
+/* Divider */
+.divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+
+/* ── Editor area ─────────────────────────────────────── */
+.editor-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--bg);
+}
+.editor-toolbar-ext {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 16px;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+}
+.editor-toolbar-ext .stat { font-size: 0.78rem; color: var(--muted); }
+.editor-toolbar-ext .sep { width: 1px; height: 16px; background: var(--border); }
+.autosave-status { font-size: 0.78rem; color: var(--light); display: flex; align-items: center; gap: 4px; }
+.autosave-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--light); }
+.autosave-dot.saved { background: var(--success); }
+.autosave-dot.saving { background: var(--warn); animation: pulse .8s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+.editor-scroll { flex: 1; overflow: auto; }
+.editor-scroll .CodeMirror { height: 100%; font-family: var(--mono); font-size: 0.92rem; }
+
+/* EasyMDE overrides */
+.EasyMDEContainer { height: 100%; display: flex; flex-direction: column; }
+.EasyMDEContainer .CodeMirror { flex: 1; border: none; border-radius: 0; background: var(--bg); color: var(--text); font-family: var(--mono); font-size: 0.92rem; padding: 24px 32px; }
+.EasyMDEContainer .CodeMirror-scroll { height: 100%; }
+.EasyMDEContainer .CodeMirror-cursor { border-left-color: var(--accent); }
+.editor-toolbar { background: var(--card) !important; border-bottom: 1px solid var(--border) !important; border-top: none !important; padding: 4px 12px !important; }
+.editor-toolbar button { color: var(--muted) !important; background: none !important; border: none !important; padding: 4px 6px !important; border-radius: 5px !important; transition: all .15s !important; }
+.editor-toolbar button:hover, .editor-toolbar button.active { color: var(--accent) !important; background: var(--accent-bg) !important; }
+.editor-toolbar i.separator { border-left: 1px solid var(--border) !important; }
+.editor-preview { background: var(--bg) !important; color: var(--text) !important; padding: 32px !important; }
+.editor-preview pre { background: var(--bg2) !important; border: 1px solid var(--border) !important; border-radius: 8px !important; }
+.cm-s-easymde .cm-header { color: var(--accent) !important; font-weight: 700 !important; }
+.cm-s-easymde .cm-strong { color: var(--text) !important; font-weight: 700 !important; }
+.cm-s-easymde .cm-url, .cm-s-easymde .cm-link { color: var(--accent-light) !important; }
+.cm-s-easymde .cm-quote { color: var(--muted) !important; font-style: italic !important; }
+.cm-s-easymde .cm-variable-2 { color: var(--text) !important; }
+[data-theme="dark"] .CodeMirror { background: var(--bg) !important; color: var(--text) !important; }
+[data-theme="dark"] .editor-preview { background: var(--bg) !important; color: var(--text) !important; }
+
+/* ── Panels ──────────────────────────────────────────── */
+#panel-meta, #panel-settings, #panel-posts { display: none; }
+#panel-meta.active, #panel-settings.active, #panel-posts.active { display: block; }
+
+/* ── Posts list ──────────────────────────────────────── */
+.posts-list { display: flex; flex-direction: column; gap: 8px; }
+.post-item {
+  padding: 12px 14px; border-radius: 8px;
+  border: 1px solid var(--border); background: var(--bg2);
+  cursor: pointer; transition: all .15s;
+}
+.post-item:hover { border-color: var(--accent); background: var(--accent-bg); }
+.post-item-title { font-weight: 600; font-size: 0.88rem; margin-bottom: 3px; color: var(--text); }
+.post-item-meta { font-size: 0.76rem; color: var(--light); display: flex; gap: 8px; }
+.loading-spinner { text-align: center; padding: 32px; color: var(--muted); }
+.loading-spinner::after { content: ''; display: inline-block; width: 18px; height: 18px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .6s linear infinite; vertical-align: middle; margin-left: 8px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Toast / Notifications ──────────────────────────── */
+#toast-container { position: fixed; bottom: 24px; right: 24px; z-index: 999; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+.toast {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 18px; border-radius: 10px;
+  font-size: 0.875rem; font-weight: 500;
+  box-shadow: var(--shadow-lg);
+  animation: slideIn .25s ease;
+  pointer-events: all;
+  max-width: 360px;
+}
+@keyframes slideIn { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+@keyframes slideOut { to { transform: translateX(120%); opacity: 0; } }
+.toast.success { background: var(--success-bg); color: var(--success); border: 1px solid var(--success); }
+.toast.error { background: var(--error-bg); color: var(--error); border: 1px solid var(--error); }
+.toast.info { background: var(--accent-bg); color: var(--accent); border: 1px solid var(--accent); }
+.toast.warn { background: var(--warn-bg); color: var(--warn); border: 1px solid var(--warn); }
+
+/* ── Auth screen ─────────────────────────────────────── */
+#auth-screen {
+  position: fixed; inset: 0; z-index: 200;
+  background: var(--bg);
+  display: flex; align-items: center; justify-content: center;
+}
+#auth-screen.hidden { display: none; }
+.auth-card {
+  width: 100%; max-width: 440px;
+  padding: 40px; border-radius: 16px;
+  background: var(--card); border: 1px solid var(--border);
+  box-shadow: var(--shadow-lg);
+}
+.auth-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; }
+.auth-logo span { font-size: 1.15rem; font-weight: 700; }
+.auth-logo svg rect { fill: var(--accent); }
+.auth-card h2 { font-size: 1.3rem; font-weight: 800; margin-bottom: 8px; }
+.auth-card p { color: var(--muted); font-size: 0.88rem; margin-bottom: 28px; line-height: 1.6; }
+.auth-steps { background: var(--bg2); border-radius: 8px; padding: 14px 16px; margin-bottom: 20px; }
+.auth-steps ol { padding-left: 18px; font-size: 0.82rem; color: var(--muted); }
+.auth-steps li { margin-bottom: 4px; }
+.auth-steps code { background: var(--bg3); padding: 1px 6px; border-radius: 4px; font-family: var(--mono); color: var(--text); font-size: 0.8rem; }
+.auth-steps a { font-weight: 600; }
+
+/* ── Publish dialog ─────────────────────────────────── */
+#publish-dialog {
+  position: fixed; inset: 0; z-index: 100;
+  background: rgba(0,0,0,.5); backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center;
+}
+#publish-dialog.hidden { display: none; }
+.dialog-card {
+  width: 100%; max-width: 480px;
+  background: var(--card); border-radius: 16px;
+  border: 1px solid var(--border); box-shadow: var(--shadow-lg);
+  padding: 32px;
+}
+.dialog-card h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 8px; }
+.dialog-card p { color: var(--muted); font-size: 0.88rem; margin-bottom: 20px; }
+.file-preview {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 12px 14px;
+  font-family: var(--mono); font-size: 0.82rem;
+  color: var(--accent); margin-bottom: 20px;
+  word-break: break-all;
+}
+.dialog-actions { display: flex; gap: 10px; justify-content: flex-end; }
+
+/* ── Settings panel ──────────────────────────────────── */
+.settings-section { margin-bottom: 24px; }
+.settings-section h4 { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-bottom: 14px; }
+.settings-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border-light, var(--border)); }
+.settings-row:last-child { border-bottom: none; }
+.settings-row label { font-size: 0.88rem; font-weight: 500; }
+.settings-row .hint { font-size: 0.76rem; color: var(--light); margin-top: 2px; }
+
+/* Toggle switch */
+.toggle { position: relative; width: 42px; height: 24px; flex-shrink: 0; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-slider { position: absolute; inset: 0; background: var(--border); border-radius: 99px; cursor: pointer; transition: .2s; }
+.toggle-slider::before { content: ''; position: absolute; width: 18px; height: 18px; left: 3px; top: 3px; background: white; border-radius: 50%; transition: .2s; }
+.toggle input:checked + .toggle-slider { background: var(--accent); }
+.toggle input:checked + .toggle-slider::before { transform: translateX(18px); }
+
+/* ── Responsive ──────────────────────────────────────── */
+@media (max-width: 768px) {
+  :root { --sidebar: 100%; }
+  .workspace { flex-direction: column; }
+  .sidebar { width: 100%; min-width: 0; height: auto; max-height: 40vh; }
+}
+</style>
+</head>
+<body>
+<!-- Auth Screen -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <svg width="32" height="32" viewBox="0 0 28 28" fill="none"><rect width="28" height="28" rx="8" fill="#6366f1"/><path d="M8 10h5l3 8 3-8h5" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>NXT Blog Admin</span>
+    </div>
+    <h2>GitHub 토큰으로 로그인</h2>
+    <p>GitHub Personal Access Token을 입력하면 블로그에 직접 글을 발행할 수 있습니다.</p>
+    <div class="auth-steps">
+      <ol>
+        <li><a href="https://github.com/settings/tokens/new" target="_blank" rel="noopener">GitHub → Settings → Tokens</a>에서 새 토큰 생성</li>
+        <li>Note: <code>nxt-blog-admin</code></li>
+        <li>권한: <code>repo</code> (전체 체크)</li>
+        <li>만료: 원하는 기간 설정</li>
+      </ol>
+    </div>
+    <div class="field">
+      <label class="label">Personal Access Token</label>
+      <input type="password" id="token-input" class="input" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" autocomplete="off" />
+      <div class="hint">토큰은 브라우저 localStorage에만 저장됩니다.</div>
+    </div>
+    <div class="field">
+      <label class="label">저장소</label>
+      <input type="text" id="repo-input" class="input" value="nxtcloud-org/nxt-team-blog" />
+    </div>
+    <div class="field">
+      <label class="label">기본 브랜치</label>
+      <input type="text" id="branch-input" class="input" value="main" />
+    </div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;padding:11px" onclick="App.authenticate()">
+      로그인
+    </button>
+  </div>
+</div>
+
+<!-- Main App -->
+<div id="app">
+  <!-- Topbar -->
+  <div class="topbar">
+    <a href="../" class="topbar-logo" title="블로그로 돌아가기">
+      <svg width="26" height="26" viewBox="0 0 28 28" fill="none"><rect width="28" height="28" rx="8" fill="#6366f1"/><path d="M8 10h5l3 8 3-8h5" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      NXT Blog
+    </a>
+    <div class="topbar-sep"></div>
+    <span class="topbar-title" id="editor-filename">새 글 작성</span>
+    <div class="topbar-actions">
+      <div class="autosave-status">
+        <div class="autosave-dot" id="autosave-dot"></div>
+        <span id="autosave-text">자동저장 대기</span>
+      </div>
+      <div class="topbar-sep"></div>
+      <button class="btn btn-ghost btn-sm" onclick="App.resetEditor()" title="초기화">새 글</button>
+      <button class="btn btn-icon btn-outline" onclick="App.toggleTheme()" title="테마 변경">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="theme-icon-sun"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="theme-icon-moon" style="display:none"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+      <button class="btn btn-primary" id="publish-btn" onclick="App.showPublishDialog()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13"/><path d="M22 2L15 22 11 13 2 9l20-7z"/></svg>
+        발행하기
+      </button>
+      <button class="btn btn-ghost btn-icon" onclick="App.logout()" title="로그아웃">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Workspace -->
+  <div class="workspace">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-tabs">
+        <button class="sidebar-tab active" onclick="App.switchTab('meta')">✏️ 메타정보</button>
+        <button class="sidebar-tab" onclick="App.switchTab('posts')">📋 글 목록</button>
+        <button class="sidebar-tab" onclick="App.switchTab('settings')">⚙️ 설정</button>
+      </div>
+
+      <!-- Meta Panel -->
+      <div class="sidebar-body" id="panel-meta" style="display:block">
+        <div class="field">
+          <label class="label">제목 <span>*</span></label>
+          <input type="text" id="f-title" class="input" placeholder="글 제목을 입력하세요" oninput="App.onMetaChange()" />
+        </div>
+        <div class="field">
+          <label class="label">설명</label>
+          <textarea id="f-desc" class="textarea" rows="2" placeholder="검색 결과와 OG 태그에 표시될 짧은 설명" oninput="App.onMetaChange()"></textarea>
+        </div>
+        <div class="field">
+          <label class="label">작성자 <span>*</span></label>
+          <select id="f-author" class="select" onchange="App.onMetaChange()">
+            <option value="">작성자 선택...</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="label">태그</label>
+          <div class="tags-input-wrap" id="tags-wrap" onclick="document.getElementById('tags-input').focus()">
+            <input type="text" id="tags-input" class="tags-bare-input" placeholder="태그 입력 후 Enter" onkeydown="App.onTagKeydown(event)" />
+          </div>
+          <div class="hint">Enter 또는 쉼표로 구분</div>
+        </div>
+        <div class="field">
+          <label class="label">발행일</label>
+          <input type="datetime-local" id="f-date" class="input" oninput="App.onMetaChange()" />
+        </div>
+        <hr class="divider" />
+        <div class="field">
+          <label class="label">파일명 미리보기</label>
+          <div class="file-preview" id="filename-preview" style="margin-bottom:0; font-size:0.78rem">
+            제목을 입력하면 자동 생성됩니다
+          </div>
+        </div>
+      </div>
+
+      <!-- Posts Panel -->
+      <div class="sidebar-body" id="panel-posts">
+        <button class="btn btn-outline" style="width:100%;justify-content:center;margin-bottom:14px" onclick="App.loadPosts()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+          새로고침
+        </button>
+        <div id="posts-list-container">
+          <div class="loading-spinner">글 목록 불러오는 중</div>
+        </div>
+      </div>
+
+      <!-- Settings Panel -->
+      <div class="sidebar-body" id="panel-settings">
+        <div class="settings-section">
+          <h4>저장소</h4>
+          <div class="field">
+            <label class="label">GitHub 저장소</label>
+            <input type="text" id="s-repo" class="input" placeholder="owner/repo" />
+          </div>
+          <div class="field">
+            <label class="label">브랜치</label>
+            <input type="text" id="s-branch" class="input" />
+          </div>
+          <button class="btn btn-outline" style="width:100%;justify-content:center" onclick="App.saveSettings()">저장</button>
+        </div>
+        <div class="settings-section">
+          <h4>토큰</h4>
+          <div class="field">
+            <label class="label">Personal Access Token</label>
+            <input type="password" id="s-token" class="input" placeholder="토큰 재입력..." />
+            <div class="hint">보안을 위해 현재 토큰은 표시되지 않습니다.</div>
+          </div>
+          <button class="btn btn-outline" style="width:100%;justify-content:center" onclick="App.updateToken()">토큰 변경</button>
+        </div>
+        <div class="settings-section">
+          <h4>위험 구역</h4>
+          <button class="btn" style="width:100%;justify-content:center;border-color:var(--error);color:var(--error)" onclick="App.logout()">로그아웃 및 토큰 삭제</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Editor -->
+    <div class="editor-area">
+      <div class="editor-toolbar-ext">
+        <span class="stat" id="stat-words">0 단어</span>
+        <span class="stat" id="stat-chars">0 자</span>
+        <span class="sep"></span>
+        <span class="stat" id="stat-readtime">읽기 0분</span>
+      </div>
+      <div class="editor-scroll" id="editor-scroll">
+        <textarea id="mde"></textarea>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Publish Dialog -->
+<div id="publish-dialog" class="hidden">
+  <div class="dialog-card">
+    <h3>글 발행 확인</h3>
+    <p>아래 경로로 GitHub에 커밋됩니다.</p>
+    <div class="file-preview" id="dialog-filepath"></div>
+    <div class="field">
+      <label class="label">커밋 메시지</label>
+      <input type="text" id="commit-msg" class="input" placeholder="feat: 새 글 추가" />
+    </div>
+    <div id="publish-edit-warn" class="hint" style="display:none;color:var(--warn);margin-bottom:12px">
+      ⚠️ 기존 파일을 덮어씁니다.
+    </div>
+    <div class="dialog-actions">
+      <button class="btn btn-outline" onclick="App.closePublishDialog()">취소</button>
+      <button class="btn btn-primary" id="confirm-publish-btn" onclick="App.publishPost()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13"/><path d="M22 2L15 22 11 13 2 9l20-7z"/></svg>
+        발행
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Container -->
+<div id="toast-container"></div>
+
+<script src="https://unpkg.com/easymde/dist/easymde.min.js"></script>
+<script>
+const STORAGE_KEY = 'nxt-admin-v1';
+const DRAFT_KEY = 'nxt-draft-v1';
+
+// ── GitHub API ────────────────────────────────────────
+class GitHub {
+  constructor(token, repo, branch = 'main') {
+    this.token = token;
+    this.repo = repo;
+    this.branch = branch;
+  }
+
+  async req(method, path, body = null) {
+    const opts = {
+      method,
+      headers: {
+        Authorization: `Bearer ${this.token}`,
+        Accept: 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json',
+        'X-GitHub-Api-Version': '2022-11-28',
+      },
+    };
+    if (body) opts.body = JSON.stringify(body);
+    const res = await fetch(`https://api.github.com${path}`, opts);
+    if (res.status === 404) throw new Error('NOT_FOUND');
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || `HTTP ${res.status}`);
+    }
+    return res.status === 204 ? null : res.json();
+  }
+
+  async getUser() { return this.req('GET', '/user'); }
+  async getContents(path) { return this.req('GET', `/repos/${this.repo}/contents/${path}?ref=${this.branch}`); }
+  async createOrUpdate(path, content, message, sha = null) {
+    const body = {
+      message,
+      content: btoa(unescape(encodeURIComponent(content))),
+      branch: this.branch,
+    };
+    if (sha) body.sha = sha;
+    return this.req('PUT', `/repos/${this.repo}/contents/${path}`, body);
+  }
+}
+
+// ── Utilities ─────────────────────────────────────────
+function slugify(str) {
+  return str.trim()
+    .replace(/[\s_]+/g, '-')
+    .replace(/[^a-zA-Z0-9가-힣ㄱ-ㅎㅏ-ㅣ\-]/g, '')
+    .replace(/-+/g, '-')
+    .toLowerCase()
+    .slice(0, 60);
+}
+
+function toDatetimeLocal(d = new Date()) {
+  return new Date(d.getTime() - d.getTimezoneOffset() * 60000)
+    .toISOString().slice(0, 16);
+}
+
+function fromDatetimeLocal(val) {
+  return val ? new Date(val) : new Date();
+}
+
+function formatFrontmatterDate(d) {
+  const pad = n => String(n).padStart(2, '0');
+  const offset = -d.getTimezoneOffset();
+  const sign = offset >= 0 ? '+' : '-';
+  const abs = Math.abs(offset);
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:00 ${sign}${pad(Math.floor(abs/60))}${pad(abs%60)}`;
+}
+
+function decodeBase64(b64) {
+  try { return decodeURIComponent(escape(atob(b64))); }
+  catch { return atob(b64); }
+}
+
+function parseFrontmatter(content) {
+  const m = content.match(/^---\n([\s\S]*?)\n---\n([\s\S]*)$/);
+  if (!m) return { frontmatter: {}, body: content };
+  const raw = m[1];
+  const body = m[2];
+  const fm = {};
+  for (const line of raw.split('\n')) {
+    const i = line.indexOf(':');
+    if (i < 0) continue;
+    const k = line.slice(0, i).trim();
+    const v = line.slice(i + 1).trim();
+    if (v.startsWith('[') && v.endsWith(']')) {
+      fm[k] = v.slice(1, -1).split(',').map(s => s.trim().replace(/^["']|["']$/g, '')).filter(Boolean);
+    } else {
+      fm[k] = v.replace(/^["']|["']$/g, '');
+    }
+  }
+  return { frontmatter: fm, body };
+}
+
+// ── App ───────────────────────────────────────────────
+const App = (() => {
+  let gh = null;
+  let mde = null;
+  let tags = [];
+  let editingSha = null;
+  let editingPath = null;
+  let autosaveTimer = null;
+  let settings = {};
+
+  function loadSettings() {
+    try { settings = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch { settings = {}; }
+  }
+
+  function saveSettings_() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+  }
+
+  function init() {
+    loadSettings();
+
+    // Theme
+    const theme = settings.theme || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    applyTheme(theme);
+
+    // Init EasyMDE
+    mde = new EasyMDE({
+      element: document.getElementById('mde'),
+      spellChecker: false,
+      autosave: { enabled: false },
+      toolbar: [
+        'bold', 'italic', 'strikethrough', '|',
+        'heading-1', 'heading-2', 'heading-3', '|',
+        'quote', 'code', 'table', '|',
+        'unordered-list', 'ordered-list', '|',
+        'link', 'image', '|',
+        'preview', 'side-by-side', 'fullscreen',
+      ],
+      placeholder: '마크다운으로 글을 작성하세요...\n\n# 제목 1\n## 제목 2\n\n**굵게**, *기울임*, `코드`\n\n```javascript\nconsole.log("Hello, World!");\n```',
+      minHeight: 'calc(100vh - 140px)',
+    });
+
+    mde.codemirror.on('change', () => {
+      updateStats();
+      scheduleSave();
+    });
+
+    // Set today's date
+    document.getElementById('f-date').value = toDatetimeLocal();
+
+    // Auth check
+    if (settings.token && settings.repo) {
+      gh = new GitHub(settings.token, settings.repo, settings.branch || 'main');
+      document.getElementById('auth-screen').classList.add('hidden');
+      loadAuthors();
+      loadPosts();
+      populateSettings();
+    }
+
+    // Restore draft
+    restoreDraft();
+
+    // Schedule autosave
+    setInterval(autosave, 30000);
+  }
+
+  function applyTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    settings.theme = theme;
+    saveSettings_();
+    document.getElementById('theme-icon-sun').style.display = theme === 'dark' ? 'none' : '';
+    document.getElementById('theme-icon-moon').style.display = theme === 'dark' ? '' : 'none';
+  }
+
+  function toggleTheme() {
+    applyTheme(settings.theme === 'dark' ? 'light' : 'dark');
+  }
+
+  async function authenticate() {
+    const token = document.getElementById('token-input').value.trim();
+    const repo = document.getElementById('repo-input').value.trim();
+    const branch = document.getElementById('branch-input').value.trim() || 'main';
+    if (!token || !repo) { toast('토큰과 저장소를 모두 입력해주세요.', 'error'); return; }
+
+    toast('연결 확인 중...', 'info');
+    const testGH = new GitHub(token, repo, branch);
+    try {
+      await testGH.getUser();
+      settings = { ...settings, token, repo, branch };
+      saveSettings_();
+      gh = testGH;
+      document.getElementById('auth-screen').classList.add('hidden');
+      toast('로그인 성공!', 'success');
+      loadAuthors();
+      loadPosts();
+      populateSettings();
+    } catch (e) {
+      toast('인증 실패: ' + e.message, 'error');
+    }
+  }
+
+  function logout() {
+    if (!confirm('로그아웃하고 저장된 토큰을 삭제할까요?')) return;
+    localStorage.removeItem(STORAGE_KEY);
+    location.reload();
+  }
+
+  async function loadAuthors() {
+    try {
+      const files = await gh.getContents('_authors');
+      const sel = document.getElementById('f-author');
+      sel.innerHTML = '<option value="">작성자 선택...</option>';
+      for (const f of files) {
+        if (!f.name.endsWith('.md')) continue;
+        const short_name = f.name.replace('.md', '');
+        const content = await gh.getContents(`_authors/${f.name}`);
+        const text = decodeBase64(content.content);
+        const m = text.match(/name:\s*["']?(.+?)["']?\n/);
+        const name = m ? m[1] : short_name;
+        const opt = document.createElement('option');
+        opt.value = short_name;
+        opt.textContent = `${name} (@${short_name})`;
+        sel.appendChild(opt);
+      }
+    } catch (e) {
+      console.warn('저자 목록 로드 실패:', e.message);
+    }
+  }
+
+  async function loadPosts() {
+    const container = document.getElementById('posts-list-container');
+    container.innerHTML = '<div class="loading-spinner">불러오는 중</div>';
+    try {
+      const files = await gh.getContents('_posts');
+      const posts = files.filter(f => f.name.endsWith('.md')).reverse();
+      if (posts.length === 0) {
+        container.innerHTML = '<p style="color:var(--muted);text-align:center;padding:24px">글이 없습니다.</p>';
+        return;
+      }
+      const list = document.createElement('div');
+      list.className = 'posts-list';
+      for (const p of posts) {
+        const m = p.name.match(/^(\d{4}-\d{2}-\d{2})-(.+)\.md$/);
+        const date = m ? m[1] : '';
+        const slug = m ? m[2] : p.name;
+        const item = document.createElement('div');
+        item.className = 'post-item';
+        item.innerHTML = `
+          <div class="post-item-title">${slug.replace(/-/g, ' ')}</div>
+          <div class="post-item-meta"><span>${date}</span></div>
+        `;
+        item.onclick = () => loadPostForEdit(p.path, p.sha);
+        list.appendChild(item);
+      }
+      container.innerHTML = '';
+      container.appendChild(list);
+    } catch (e) {
+      container.innerHTML = `<p style="color:var(--error)">로드 실패: ${e.message}</p>`;
+    }
+  }
+
+  async function loadPostForEdit(path, sha) {
+    toast('글 불러오는 중...', 'info');
+    try {
+      const file = await gh.getContents(path);
+      const text = decodeBase64(file.content);
+      const { frontmatter: fm, body } = parseFrontmatter(text);
+
+      document.getElementById('f-title').value = fm.title || '';
+      document.getElementById('f-desc').value = fm.description || '';
+      if (fm.date) document.getElementById('f-date').value = toDatetimeLocal(new Date(fm.date));
+
+      // Author
+      const sel = document.getElementById('f-author');
+      if (fm.author) sel.value = fm.author;
+
+      // Tags
+      tags = Array.isArray(fm.tags) ? fm.tags : (fm.tags ? [fm.tags] : []);
+      renderTags();
+
+      mde.value(body.trimStart());
+      editingSha = file.sha;
+      editingPath = path;
+      onMetaChange();
+      switchTab('meta');
+      toast('글을 불러왔습니다. 수정 후 발행하세요.', 'success');
+    } catch (e) {
+      toast('불러오기 실패: ' + e.message, 'error');
+    }
+  }
+
+  function getFilename() {
+    const title = document.getElementById('f-title').value.trim();
+    const d = fromDatetimeLocal(document.getElementById('f-date').value);
+    const pad = n => String(n).padStart(2, '0');
+    const dateStr = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    const slug = slugify(title) || 'untitled';
+    return `_posts/${dateStr}-${slug}.md`;
+  }
+
+  function buildContent() {
+    const title = document.getElementById('f-title').value.trim();
+    const desc = document.getElementById('f-desc').value.trim();
+    const author = document.getElementById('f-author').value;
+    const dateVal = document.getElementById('f-date').value;
+    const d = fromDatetimeLocal(dateVal);
+
+    const tagStr = tags.length > 0 ? `[${tags.map(t => t).join(', ')}]` : '[]';
+
+    const lines = [
+      '---',
+      'layout: post',
+      `title: "${title.replace(/"/g, '\\"')}"`,
+    ];
+    if (desc) lines.push(`description: "${desc.replace(/"/g, '\\"')}"`);
+    if (author) lines.push(`author: ${author}`);
+    lines.push(`date: ${formatFrontmatterDate(d)}`);
+    lines.push(`tags: ${tagStr}`);
+    lines.push('---', '');
+    lines.push(mde.value());
+
+    return lines.join('\n');
+  }
+
+  function onMetaChange() {
+    const filename = getFilename();
+    document.getElementById('editor-filename').textContent =
+      document.getElementById('f-title').value.trim() || '새 글 작성';
+    document.getElementById('filename-preview').textContent = filename;
+    scheduleSave();
+  }
+
+  function updateStats() {
+    const text = mde.value();
+    const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+    const chars = text.length;
+    document.getElementById('stat-words').textContent = `${words.toLocaleString()} 단어`;
+    document.getElementById('stat-chars').textContent = `${chars.toLocaleString()} 자`;
+    document.getElementById('stat-readtime').textContent = `읽기 ${Math.max(1, Math.ceil(words / 200))}분`;
+  }
+
+  function scheduleSave() {
+    clearTimeout(autosaveTimer);
+    const dot = document.getElementById('autosave-dot');
+    const txt = document.getElementById('autosave-text');
+    dot.className = 'autosave-dot saving';
+    txt.textContent = '수정 중...';
+    autosaveTimer = setTimeout(autosave, 1500);
+  }
+
+  function autosave() {
+    const dot = document.getElementById('autosave-dot');
+    const txt = document.getElementById('autosave-text');
+    const draft = {
+      title: document.getElementById('f-title').value,
+      desc: document.getElementById('f-desc').value,
+      author: document.getElementById('f-author').value,
+      date: document.getElementById('f-date').value,
+      tags: [...tags],
+      body: mde.value(),
+      editingPath,
+      editingSha,
+      savedAt: Date.now(),
+    };
+    localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+    dot.className = 'autosave-dot saved';
+    const t = new Date();
+    txt.textContent = `${t.getHours()}:${String(t.getMinutes()).padStart(2,'0')} 자동저장`;
+  }
+
+  function restoreDraft() {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) return;
+      const d = JSON.parse(raw);
+      if (Date.now() - d.savedAt > 7 * 86400 * 1000) return; // 7일 이상 오래된 건 무시
+      document.getElementById('f-title').value = d.title || '';
+      document.getElementById('f-desc').value = d.desc || '';
+      if (d.author) document.getElementById('f-author').value = d.author;
+      if (d.date) document.getElementById('f-date').value = d.date;
+      tags = d.tags || [];
+      renderTags();
+      if (d.body) mde.value(d.body);
+      editingPath = d.editingPath || null;
+      editingSha = d.editingSha || null;
+      onMetaChange();
+      updateStats();
+    } catch {}
+  }
+
+  function resetEditor() {
+    if (mde.value().trim() && !confirm('작성 중인 내용이 초기화됩니다. 계속할까요?')) return;
+    document.getElementById('f-title').value = '';
+    document.getElementById('f-desc').value = '';
+    document.getElementById('f-author').value = '';
+    document.getElementById('f-date').value = toDatetimeLocal();
+    tags = [];
+    renderTags();
+    mde.value('');
+    editingPath = null;
+    editingSha = null;
+    localStorage.removeItem(DRAFT_KEY);
+    onMetaChange();
+    updateStats();
+    document.getElementById('autosave-dot').className = 'autosave-dot';
+    document.getElementById('autosave-text').textContent = '자동저장 대기';
+  }
+
+  // Tags
+  function onTagKeydown(e) {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      const val = e.target.value.replace(',', '').trim();
+      if (val && !tags.includes(val)) {
+        tags.push(val);
+        renderTags();
+        scheduleSave();
+      }
+      e.target.value = '';
+    } else if (e.key === 'Backspace' && !e.target.value && tags.length > 0) {
+      tags.pop();
+      renderTags();
+      scheduleSave();
+    }
+  }
+
+  function removeTag(tag) {
+    tags = tags.filter(t => t !== tag);
+    renderTags();
+    scheduleSave();
+  }
+
+  function renderTags() {
+    const wrap = document.getElementById('tags-wrap');
+    const input = document.getElementById('tags-input');
+    wrap.querySelectorAll('.tag-pill').forEach(el => el.remove());
+    for (const tag of tags) {
+      const pill = document.createElement('span');
+      pill.className = 'tag-pill';
+      pill.innerHTML = `${tag}<button onclick="App.removeTag('${tag}')" title="삭제">×</button>`;
+      wrap.insertBefore(pill, input);
+    }
+  }
+
+  // Publish
+  function showPublishDialog() {
+    const title = document.getElementById('f-title').value.trim();
+    if (!title) { toast('제목을 입력해주세요.', 'error'); return; }
+    if (!document.getElementById('f-author').value) { toast('작성자를 선택해주세요.', 'error'); return; }
+    if (!mde.value().trim()) { toast('내용을 입력해주세요.', 'error'); return; }
+
+    const filename = getFilename();
+    document.getElementById('dialog-filepath').textContent = filename;
+    document.getElementById('commit-msg').value = editingPath
+      ? `docs: "${title}" 수정`
+      : `feat: "${title}" 추가`;
+
+    const warnEl = document.getElementById('publish-edit-warn');
+    warnEl.style.display = editingPath ? '' : 'none';
+
+    document.getElementById('publish-dialog').classList.remove('hidden');
+  }
+
+  function closePublishDialog() {
+    document.getElementById('publish-dialog').classList.add('hidden');
+  }
+
+  async function publishPost() {
+    const btn = document.getElementById('confirm-publish-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<span style="display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.4);border-top-color:white;border-radius:50%;animation:spin .6s linear infinite"></span> 발행 중...';
+
+    try {
+      const filename = getFilename();
+      const content = buildContent();
+      const message = document.getElementById('commit-msg').value.trim() || `feat: 새 글 추가`;
+
+      // Check if file exists (to get SHA for update)
+      let sha = editingSha;
+      if (!sha) {
+        try {
+          const existing = await gh.getContents(filename);
+          sha = existing.sha;
+        } catch (e) {
+          if (e.message !== 'NOT_FOUND') throw e;
+        }
+      }
+
+      await gh.createOrUpdate(filename, content, message, sha);
+      closePublishDialog();
+      toast(`"${document.getElementById('f-title').value}" 발행 완료! 🎉`, 'success');
+      localStorage.removeItem(DRAFT_KEY);
+      editingPath = filename;
+      loadPosts();
+    } catch (e) {
+      toast('발행 실패: ' + e.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13"/><path d="M22 2L15 22 11 13 2 9l20-7z"/></svg> 발행';
+    }
+  }
+
+  function populateSettings() {
+    document.getElementById('s-repo').value = settings.repo || '';
+    document.getElementById('s-branch').value = settings.branch || 'main';
+  }
+
+  function saveSettings() {
+    settings.repo = document.getElementById('s-repo').value.trim();
+    settings.branch = document.getElementById('s-branch').value.trim() || 'main';
+    saveSettings_();
+    if (gh) { gh.repo = settings.repo; gh.branch = settings.branch; }
+    toast('설정을 저장했습니다.', 'success');
+  }
+
+  function updateToken() {
+    const token = document.getElementById('s-token').value.trim();
+    if (!token) { toast('토큰을 입력해주세요.', 'error'); return; }
+    settings.token = token;
+    saveSettings_();
+    gh.token = token;
+    document.getElementById('s-token').value = '';
+    toast('토큰이 변경됐습니다.', 'success');
+  }
+
+  function switchTab(name) {
+    document.querySelectorAll('.sidebar-tab').forEach((t, i) => {
+      t.classList.toggle('active', ['meta','posts','settings'][i] === name);
+    });
+    document.querySelectorAll('.sidebar-body').forEach(p => p.classList.remove('active'));
+    const panel = document.getElementById(`panel-${name}`);
+    if (panel) { panel.classList.add('active'); panel.style.display = 'block'; }
+    ['meta','posts','settings'].filter(n => n !== name).forEach(n => {
+      const p = document.getElementById(`panel-${n}`);
+      if (p) p.style.display = 'none';
+    });
+  }
+
+  // Toast
+  function toast(msg, type = 'info', duration = 3500) {
+    const icons = { success: '✓', error: '✕', info: 'ℹ', warn: '⚠' };
+    const el = document.createElement('div');
+    el.className = `toast ${type}`;
+    el.innerHTML = `<span>${icons[type] || 'ℹ'}</span><span>${msg}</span>`;
+    document.getElementById('toast-container').appendChild(el);
+    setTimeout(() => {
+      el.style.animation = 'slideOut .25s ease forwards';
+      setTimeout(() => el.remove(), 260);
+    }, duration);
+  }
+
+  return {
+    init, authenticate, logout, toggleTheme,
+    onMetaChange, onTagKeydown, removeTag,
+    showPublishDialog, closePublishDialog, publishPost,
+    resetEditor, loadPosts, switchTab,
+    saveSettings, updateToken,
+  };
+})();
+
+document.addEventListener('DOMContentLoaded', () => App.init());
+
+// Enter key on auth screen
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !document.getElementById('auth-screen').classList.contains('hidden')) {
+    App.authenticate();
+  }
+});
+</script>
+</body>
+</html>
