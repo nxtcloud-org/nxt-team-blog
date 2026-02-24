@@ -12,12 +12,14 @@
     CACHE_MS: 3600000 // 1시간
   };
 
+  var path = window.location.pathname;
   var isLoginPage =
-    window.location.pathname === "{{ '/login/' | relative_url }}" ||
-    window.location.pathname === "{{ '/login/' | relative_url }}".replace(/\/$/, "");
+    path === "{{ '/login/' | relative_url }}" ||
+    path === "{{ '/login/' | relative_url }}".replace(/\/$/, "");
+  var isAdminPage = path.indexOf("{{ '/admin' | relative_url }}") === 0;
 
-  // 로그인 페이지는 인증 체크 건너뜀
-  if (isLoginPage) return;
+  // 로그인 페이지이거나 admin 외 일반 페이지는 인증 체크 건너뜀
+  if (isLoginPage || !isAdminPage) return;
 
   // 콘텐츠 숨기기 (인증 전까지)
   document.documentElement.style.visibility = "hidden";
