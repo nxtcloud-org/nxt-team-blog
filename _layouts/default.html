@@ -26,6 +26,9 @@
   <!-- Stylesheet -->
   <link rel="stylesheet" href="{{ '/assets/css/main.css' | relative_url }}" />
 
+  <!-- 인증 (콘텐츠 렌더링 전 실행) -->
+  <script src="{{ '/assets/js/auth.js' | relative_url }}"></script>
+
   {% seo %}
   {% feed_meta %}
 </head>
@@ -39,5 +42,17 @@
   {% include footer.html %}
 
   <script src="{{ '/assets/js/main.js' | relative_url }}"></script>
+  <script>
+    (function () {
+      var username = localStorage.getItem("nxt_gh_user");
+      if (!username) return;
+      var userEl = document.getElementById("navUser");
+      var nameEl = document.getElementById("navUsername");
+      var logoutEl = document.getElementById("logoutBtn");
+      if (userEl) userEl.style.display = "flex";
+      if (nameEl) nameEl.textContent = "@" + username;
+      if (logoutEl) logoutEl.style.display = "";
+    })();
+  </script>
 </body>
 </html>

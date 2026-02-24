@@ -58,3 +58,8 @@ twitter_username: nxtcloud
 
 # Theme color
 accent_color: "#6366f1"
+
+# GitHub OAuth (Device Flow 인증)
+github_oauth:
+  client_id: "Ov23liqY8t6gGuHHJ6xZ"
+  client_secret: "ba413223aa56eeea5f4eedcebd8828653382a4e4"
